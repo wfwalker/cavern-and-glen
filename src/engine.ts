@@ -2,6 +2,7 @@
 
 import { Player } from './player';
 import { Mission, freeSector, playerSector } from './mission';
+import { TextWindow } from './textwindow';
 
 export interface Monster {
     name: string;
@@ -26,6 +27,8 @@ export class CavernGame {
     private readonly CHAR_WIDTH = 8;
     private readonly CHAR_HEIGHT = 8;
 
+    private commandWindow: TextWindow;
+
     // the current player of this game
     public player!: Player;
     public currentMission: Mission;
@@ -48,6 +51,7 @@ export class CavernGame {
 
         this.initBuffer();
         this.setupInput();
+        this.commandWindow = new TextWindow(this, { x1: 2, y1: 20, x2: 80, y2: 25 });
 
         this.titlePage();
         
@@ -86,6 +90,10 @@ export class CavernGame {
                 this.screenBuffer[y][x] = [' ', '#A8A8A8', bgColor];
             }
         }
+    }
+
+    public drawCommandWindowMessage(message: string) {
+        this.commandWindow.writeLine(message);
     }
 
     public titlePage() {
@@ -231,16 +239,16 @@ export class CavernGame {
             switch (newSector.kind) {
                 case 'monster':
                     const monsterName = newSector.monster.name;
-                    console.log("collide with " + monsterName);
+                    this.drawCommandWindowMessage("collide with " + monsterName);
                     break;
                 case 'tree':
-                    console.log("collide with tree");
+                    this.drawCommandWindowMessage("collide with tree");
                     break;
                 case 'chest':
-                    console.log("collide with chest");
+                    this.drawCommandWindowMessage("collide with chest");
                     break;
                 case 'castle':
-                    console.log("collide with castle");
+                    this.drawCommandWindowMessage("collide with castle");
                     break;
                 case 'free':
                     this.currentMission.place(this.player.x, this.player.y, freeSector());
@@ -249,7 +257,7 @@ export class CavernGame {
                     this.player.y = newY;            
                     break;
                 case 'player':
-                    console.log("collide with ANOTHER PLAYER");
+                    this.drawCommandWindowMessage("collide with ANOTHER PLAYER");
                     break;
             }
 
@@ -279,11 +287,11 @@ export class CavernGame {
     }
 
     private displayHelp() {
-        this.writeAt(2, 20, " q  w  e   │  b ── bow");
-        this.writeAt(2, 21, "  \\ │ /    │  s ── sword");
-        this.writeAt(2, 22, " a ─── d   │  o ── open chest");
-        this.writeAt(2, 23, "  / │ \\    │  u ── use item");
-        this.writeAt(2, 24, " z  x  d   │  h ── this help");
+        this.drawCommandWindowMessage(" q  w  e   │  b ── bow");
+        this.drawCommandWindowMessage("  \\ │ /    │  s ── sword");
+        this.drawCommandWindowMessage(" a ─── d   │  o ── open chest");
+        this.drawCommandWindowMessage("  / │ \\    │  u ── use item");
+        this.drawCommandWindowMessage(" z  x  d   │  h ── this help");
     }
 
     private render() {
