@@ -84,10 +84,10 @@ export class TextWindow {
      */
     public async askDirection(promptText: string): Promise<{ dx: number; dy: number }> {
         // 1. Replicate C_Window (clear this sub-viewport and reset internal cursor)
-        this.clear(); 
+        //this.clear(); 
 
         // 2. Render the prompt line
-        this.writeLine(`${promptText} > `, '#FFFF55'); 
+        this.writeLine(`${promptText} > `); 
 
         // 3. Asynchronously pause execution until a physical keyboard event occurs
         const key = await this.waitForSingleKeypress();

@@ -80,7 +80,6 @@ export class CavernGame {
 
     // Direct replacement for Pascal's GotoXY and Write
     public writeAt(x: number, y: number, text: string, color = '#33ff33', bgColor = '#000000') {
-        // console.log('writeAt(' + x + ', ' + y + ', ' + text + ')');
         // Adjusting Pascal's 1-based indexing safely to 0-based indexing
         let cursorX = x - 1;
         let cursorY = y - 1;
@@ -93,7 +92,6 @@ export class CavernGame {
         }
     }
 
-    // Simulates ClrScr
     public clearScreen(bgColor = '#000000') {
         for (let y = 0; y < this.ROWS; y++) {
             for (let x = 0; x < this.COLS; x++) {
@@ -163,17 +161,13 @@ export class CavernGame {
 
     private handleTitleKeys(key: string) {
         if (key === 'n') {
-            // Move to character creation stage
-            console.log("moving to CHARACTER_CREATION");
             this.currentMode = 'CHARACTER_CREATION';
             this.playerNameInput = ""; // Clear out any previous name junk
             this.displayCharacterCreationScreen();
         } else if (key === 'm') {
-            console.log("moving to MISSION / PLAYING");
             this.currentMode = 'PLAYING';
             this.currentMission = new Mission(this.player, this.monsterList);
-            console.log("current mission");
-            console.log(this.currentMission);
+
             this.drawGameScreen();
             this.drawStats();
         }
@@ -195,6 +189,7 @@ export class CavernGame {
 
     private handleGameplayKeys(key: string) {
         console.log("handlePlayerCommand " + key);
+
         switch(key) {
             // Movement keys mapping to your original layout
             case 'q': this.movePlayer(-1,  1); break;
@@ -219,7 +214,7 @@ export class CavernGame {
     }
 
     private async doSword() {
-        const { dx, dy } = await this.directionalQuestion("sword direction");
+        const { dx, dy } = await this.directionalQuestion("Sword");
         console.log("doSword deltas " + dx + ", " + dy);
         const newLoc = this.player.relativeLocation(dx, dy);
         console.log(newLoc);
@@ -265,14 +260,6 @@ export class CavernGame {
                         }
 
                         // TODO: update locations of all monsters (needed for motion)
-
-                        // Message(' You killed the '+Q[i,j].m.name+'.',FALSE);
-                        // exp := exp + Q[i,j].m.worth - Random(3)+1;
-                        // if Q[i,j].m.name = M_list[Mis_target].name then begin
-                        //   Mis_quota := Mis_quota - 1;
-                        //   if Mis_quota = 0 then Mis_done := true;
-                        // end;
-                        // Q[i,j].kind := free;
 
                         // scan := 0;
                         // repeat
@@ -348,9 +335,6 @@ export class CavernGame {
                     const monsterName = newSector.monster.name;
                     this.drawCommandWindowMessage("collide with " + monsterName);
                     break;
-                case 'tree':
-                    this.drawCommandWindowMessage("collide with tree");
-                    break;
                 case 'chest':
                     this.drawCommandWindowMessage("collide with chest");
                     break;
@@ -367,36 +351,11 @@ export class CavernGame {
                     this.drawCommandWindowMessage("collide with ANOTHER PLAYER");
                     break;
             }
-
-
         }
-
-
-        // if Inside(sx+dx,sy+dy) then
-        //   case Q[sx+dx,sy+dy].kind of
-        //   {note that it it is note considered newsworthy to move into a tree}
-        //      free: begin
-        //               if Q[sx,sy].kind = me then Q[sx,sy].kind := free
-        //               else Q[sx,sy].me_inside := false;
-        //               Q[sx+dx,sy+dy].kind := me;
-        //               sx := sx + dx; sy := sy + dy;
-        //            end;
-        //      castle: begin
-        //                 Q[sx,sy].kind := free;
-        //                 Q[sx+dx,sy+dy].me_inside := true;
-        //                 sx := sx + dx; sy := sy + dy;
-        //              end;
-        //      monster: Message(' You moved into a '+Q[sx+dx,sy+dy].m.name+'.',FALSE);
-        //      chest: Message(' You moved into a treasure chest',FALSE);
-        //   end; {case }
-
-
     }
 
     // Inside your main game coordination loop
     public async directionalQuestion(prompt: string): { dx: number, dy: number } {
-        this.drawCommandWindowMessage(prompt);
-
         // Game pauses right here naturally until the player presses a valid key!
         const { dx, dy } = await this.commandWindow.askDirection(prompt);
 

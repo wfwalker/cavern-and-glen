@@ -27,7 +27,6 @@ export class Player {
         return { x: newX, y: newY };
     }
 
-    // Methods (Encapsulating your 1985 game logic)
     public takeDamage(amount: number) {
         this.exp -= amount;
         if (this.exp < 0) this.exp = 0;
