@@ -1,0 +1,28 @@
+{
+  "name": "cavern-and-glen",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest",
+    "dev": "vite",
+    "preview": "vite preview",
+    "build": "tsc && vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wfwalker/cavern-and-glen.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wfwalker/cavern-and-glen/issues"
+  },
+  "homepage": "https://github.com/wfwalker/cavern-and-glen#readme",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
