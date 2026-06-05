@@ -3,7 +3,7 @@
 import { Player } from './player';
 
 export interface MissionObjective {
-    targetMonster: Monster; // must match the name of an entry from the game monsterList
+    targetMonster: Monster; // must be an entry from the game monsterList
     quota: number;
     current: number;
 }
@@ -32,7 +32,9 @@ export function treeSector(): Sector {
 }
 
 export function monsterSector(monster: Monster): Sector {
-    return { kind: 'monster', monster: monster };
+    console.log("monster sector factory");
+    console.log(monster);
+    return { kind: 'monster', monster: structuredClone(monster) };
 }
 
 export class Mission {
@@ -61,6 +63,18 @@ export class Mission {
 
     public inForest(x: number, y: number): boolean {
         return ((x >= 0) && (x < this.forestRows) && (y >= 0) && (y < this.forestCols));
+    }
+
+    public decrementTargetMonsterQuota() {
+        this.objective.quota = this.objective.quota - 1;
+    }
+
+    public status(): string {
+        if (this.objective.quota <= 0) {
+            return "* Mission Completed *";
+        } else {
+            return this.objective.quota + " " + this.objective.targetMonster.name;
+        }
     }
 
     private findRandomFreeCoordinate(): { x: number, y: number } | null {

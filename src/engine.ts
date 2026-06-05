@@ -35,6 +35,16 @@ export class CavernGame {
 
     public monsterList: Monster[];
 
+    // A placeholder to store a callback function when a prompt is waiting
+
+    private activePromptResolver: ((key: string) => void) | null = null;   
+    /**
+     * Public helper that lets the TextWindow register its temporary listener hook
+     */
+    public registerPromptHook(resolver: (key: string) => void) {
+        this.activePromptResolver = resolver;
+    }     
+
     // Terminal Screen buffer containing [character, color, backgroundColor]
     private screenBuffer: [string, string, string][][] = [];
 
@@ -118,9 +128,22 @@ export class CavernGame {
                 e.preventDefault();
             }
 
+            // 1. INTERCEPTION CHECK: Is a TextWindow prompt currently waiting?
+            if (this.activePromptResolver) {
+                event.preventDefault();
+                
+                // Grab a reference to the resolver, clear it immediately to avoid leaks
+                const resolve = this.activePromptResolver;
+                this.activePromptResolver = null;
+                
+                // Pass the key straight to the waiting Promise!
+                resolve(event.key);
+                return; // Stop execution here! Do NOT run standard gameplay inputs.
+            }
+
             console.log("handle key " + key + " in mode " + this.currentMode);
 
-            // Route the keypress based on the active mode
+            // 2. Route the keypress based on the active mode
             switch (this.currentMode) {
                 case 'TITLE':
                     this.handleTitleKeys(key);
@@ -152,6 +175,7 @@ export class CavernGame {
             console.log("current mission");
             console.log(this.currentMission);
             this.drawGameScreen();
+            this.drawStats();
         }
     }
 
@@ -184,12 +208,95 @@ export class CavernGame {
             
             // Action keys
             case 'b': /* Bow action */; break;
-            case 's': /* Sword action */; break;
+            case 's':
+                this.doSword();
+                break;
             case 'o': /* Open Chest */; break;
             case 'u': /* Use Item */; break;
             case 'h': this.displayHelp(); break;
         }
         this.drawForestNearPlayer();
+    }
+
+    private async doSword() {
+        const { dx, dy } = await this.directionalQuestion("sword direction");
+        console.log("doSword deltas " + dx + ", " + dy);
+        const newLoc = this.player.relativeLocation(dx, dy);
+        console.log(newLoc);
+
+        if (this.currentMission.inForest(newLoc.x, newLoc.y)) {
+            const targetSector = this.currentMission.grid[newLoc.x][newLoc.y];
+            console.log("doSword inForest found");
+            console.log(targetSector);
+
+            switch(targetSector.kind) {
+                case 'tree':
+                    this.drawCommandWindowMessage("You chopped down the tree");
+                    this.currentMission.grid[newLoc.x][newLoc.y] = freeSector();
+                    this.drawForestNearPlayer();
+                    break;
+                case 'chest':
+                    this.drawCommandWindowMessage("You hit a chest");
+                    break;
+                case 'castle':
+                    this.drawCommandWindowMessage("You hit a castle");
+                    break;
+                case 'monster':
+                    var damage = this.player.swordDamage();
+                    console.log("damage " + damage);
+                    targetSector.monster.points -= damage;
+                    console.log(targetSector.monster);
+                    if (targetSector.monster.points < 0) {
+                        this.drawCommandWindowMessage("You killed the " + targetSector.monster.name);
+
+                        // update stats from new experience
+                        this.player.gainExperienceFromMonster(targetSector.monster);
+                        this.drawStats();
+
+                        //  clear the grid Sector where the monster was
+                        this.currentMission.grid[newLoc.x][newLoc.y] = freeSector();
+                        this.drawForestNearPlayer();
+
+                        // TODO: update the currentMission quota and redraw the mission
+                        if (this.currentMission.objective.targetMonster.name === targetSector.monster.name)
+                        {
+                            this.currentMission.decrementTargetMonsterQuota();
+                            this.drawStats();
+                        }
+
+                        // TODO: update locations of all monsters (needed for motion)
+
+                        // Message(' You killed the '+Q[i,j].m.name+'.',FALSE);
+                        // exp := exp + Q[i,j].m.worth - Random(3)+1;
+                        // if Q[i,j].m.name = M_list[Mis_target].name then begin
+                        //   Mis_quota := Mis_quota - 1;
+                        //   if Mis_quota = 0 then Mis_done := true;
+                        // end;
+                        // Q[i,j].kind := free;
+
+                        // scan := 0;
+                        // repeat
+                        //   scan := scan + 1;
+                        // until ((x[scan]=i) and (y[scan]=j)) or (scan > Num_monster);
+
+                        // if (scan<=Num_monster) then begin
+                        //   x[scan] := x[Num_monster]; y[scan] := y[Num_monster];
+                        //   Num_monster := Num_monster - 1;
+                        // end;
+
+                        // Tell_mission;
+
+                    } else {
+                        this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
+                    }
+
+                    break;
+            }
+
+        } else {
+            console.log("not in forest");
+            console.log(newLoc.x, newLoc.y);
+        }
     }
 
     private handleCreationKeys(key: string, event: KeyboardEvent) {
@@ -286,6 +393,23 @@ export class CavernGame {
 
     }
 
+    // Inside your main game coordination loop
+    public async directionalQuestion(prompt: string): { dx: number, dy: number } {
+        this.drawCommandWindowMessage(prompt);
+
+        // Game pauses right here naturally until the player presses a valid key!
+        const { dx, dy } = await this.commandWindow.askDirection(prompt);
+
+        // If invalid key was entered, exit out of action selection safely
+        if (dx === 999 && dy === 999) {
+            this.drawCommandWindowMessage("Action canceled.");
+            return;
+        }
+
+        return { dx, dy };
+    }
+
+
     private displayHelp() {
         this.drawCommandWindowMessage(" q  w  e   │  b ── bow");
         this.drawCommandWindowMessage("  \\ │ /    │  s ── sword");
@@ -350,6 +474,32 @@ export class CavernGame {
         this.writeAt(51,19, "┴");
 
         this.drawForestNearPlayer();  
+        this.drawStats(false);
+    }
+
+    private drawStats(inverse: boolean) {
+        this.writeAt(3, 15, "Points =" + this.player.exp.toString().padStart(9));
+        this.writeAt(3, 16, "Arrows =" + this.player.arrows.toString().padStart(9));
+        this.writeAt(3, 17, "Gold   =" + this.player.gold.toString().padStart(9));
+        this.writeAt(3, 18, this.currentMission.status());
+
+        // procedure Plot_Stats(inv: boolean);
+        // {Plot the player's stats on the command window}
+        // begin
+        //    O_Window;
+        //    gotoXY(1,15);
+
+        //    if inv then begin
+        //       TextBackground(15); TextColor(0);
+        //       writeln(' Points =',exp:9:0);
+        //       TextBackground(0); TextColor(7);
+        //    end else
+        //       writeln(' Points =',exp:9:0);
+
+        //    writeln(' Arrows =',arrows:9); writeln(' Gold   =',gold:9);
+        // end;
+
+
     }
 
     private drawForestNearPlayer() {
