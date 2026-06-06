@@ -1,6 +1,7 @@
 // mission.ts
 
 import { Player } from './player';
+import { Monster, Item } from './engine';
 
 export interface MissionObjective {
     targetMonster: Monster; // must be an entry from the game monsterList
@@ -14,9 +15,9 @@ export type Flavor = 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'me';
 export type Sector =
     | { kind: 'free'; trap: boolean }
     | { kind: 'tree'; pic: string }
-    | { kind: 'monster'; m: Monster }
+    | { kind: 'monster'; monster: Monster }
     | { kind: 'castle'; me_inside: boolean }
-    | { kind: 'chest'; id: number; gold: number }
+    | { kind: 'chest'; item?: Item; gold: number }
     | { kind: 'player'; trapped: boolean };
 
 export function freeSector(): Sector {
@@ -35,9 +36,13 @@ export function treeSector(): Sector {
     return { kind: 'tree', pic: ' \u2660 ' };
 }
 
+export function chestSector(gold: number, item?: Item): Sector {
+    console.log("chest sector factory " + gold);
+    console.log(item);
+    return { kind: "chest", gold: gold, item: item };
+}
+
 export function monsterSector(monster: Monster): Sector {
-    console.log("monster sector factory");
-    console.log(monster);
     return { kind: 'monster', monster: structuredClone(monster) };
 }
 
@@ -48,7 +53,7 @@ export class Mission {
     public readonly forestRows = 40;
     public readonly forestCols = 40;
 
-    constructor(thePlayer: Player, monsterList: Monster[]) {
+    constructor(thePlayer: Player, monsterList: Monster[], itemList: Item[]) {
         this.playerExp = thePlayer.exp;
         this.grid = [];
         
@@ -61,6 +66,8 @@ export class Mission {
         this.initializeTrees();
 
         this.initializeCastles();
+
+        this.initializeChests(itemList);
 
         this.putPlayerInForest(thePlayer);
 
@@ -139,21 +146,21 @@ export class Mission {
         }
     }
 
-    private initializeChests() {
-
-       // MaxChest := Mis_Quota div 2;
-       // for i := 1 to MaxChest do begin
-       //    SetSect(a,b,chest);           {set up the chest}
-       //    if (Random(18)>6) then begin
-       //       Q[a,b].gold := Random(50)+1; Q[a,b].id := 0;
-       //    end else begin
-       //       Q[a,b].id := Random(MaxTreasure)+1; Q[a,b].gold := 0;
-       //    end;
-       // end;
-
+    private initializeChests(itemList: Item[]) {
+        const numberOfChests = Math.trunc(this.objective.quota / 2);
+ 
+        for (let i = 0; i < numberOfChests; i++) {
+            if (18 * Math.random() > 6) {
+                const goldAmount = Math.round(Math.random() * 50) + 1;
+                this.placeOnRandomFreeSector(chestSector(goldAmount));
+            } else {
+                const randomItem = itemList[Math.floor(Math.random() * itemList.length)];
+                this.placeOnRandomFreeSector(chestSector(0, structuredClone(randomItem)));
+            }
+        }
     }
 
-    private putPlayerInForest(thePlayer) {
+    private putPlayerInForest(thePlayer: Player) {
         const { x, y } = this.placeOnRandomFreeSector(playerSector());
         thePlayer.x = x;
         thePlayer.y = y;

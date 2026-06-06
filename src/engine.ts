@@ -174,7 +174,7 @@ export class CavernGame {
             this.displayCharacterCreationScreen();
         } else if (key === 'm') {
             this.currentMode = 'PLAYING';
-            this.currentMission = new Mission(this.player, this.monsterList);
+            this.currentMission = new Mission(this.player, this.monsterList, this.itemList);
 
             this.drawGameScreen();
             this.drawStats();
@@ -212,11 +212,15 @@ export class CavernGame {
             // Action keys
             case 'b': /* Bow action */; break;
             case 's':
-                this.doSword();
+                 this.doSword();
+                 break;
+            case 'o':
+                this.doOpenChest();
                 break;
-            case 'o': /* Open Chest */; break;
             case 'u': /* Use Item */; break;
-            case 'h': this.displayHelp(); break;
+            case 'h':
+                this.displayHelp();
+                break;
         }
         this.drawForestNearPlayer();
     }
@@ -293,6 +297,42 @@ export class CavernGame {
             console.log("not in forest");
             console.log(newLoc.x, newLoc.y);
         }
+    }
+
+    private doOpenChest() {
+        const directions = [
+            { dx: -1, dy: -1 }, { dx: -1, dy: 0 }, { dx: -1, dy: 1 },
+            { dx:  0, dy: -1 },                    { dx:  0, dy: 1 },
+            { dx:  1, dy: -1 }, { dx:  1, dy: 0 }, { dx:  1, dy: 1 }
+        ];
+
+        for (const { dx, dy } of directions) {
+            const targetX = this.player.x + dx;
+            const targetY = this.player.y + dy;
+
+            if (this.currentMission.inForest(targetX, targetY)) {
+                const targetSector = this.currentMission.grid[targetX][targetY];
+
+                if (targetSector.kind === 'chest') {
+                    const goldFound = targetSector.gold || 0;
+                    this.player.gold += goldFound;
+
+                    this.currentMission.grid[targetX][targetY] = freeSector();
+
+                    if (goldFound > 0) {
+                        this.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
+                    } else {
+                        this.drawCommandWindowMessage("The chest was empty of gold.");
+                    }
+
+                    this.drawStats();
+                    this.drawForestNearPlayer();
+                    return;
+                }
+            }
+        }
+
+        this.drawCommandWindowMessage("No chest nearby.");
     }
 
     private handleCreationKeys(key: string, event: KeyboardEvent) {
