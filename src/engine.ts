@@ -210,7 +210,9 @@ export class CavernGame {
             case 'c': this.movePlayer( 1, -1); break;
             
             // Action keys
-            case 'b': /* Bow action */; break;
+            case 'b':
+                this.doBow();
+                break;
             case 's':
                  this.doSword();
                  break;
@@ -296,6 +298,75 @@ export class CavernGame {
         } else {
             console.log("not in forest");
             console.log(newLoc.x, newLoc.y);
+        }
+    }
+
+    private async doBow() {
+        if (this.player.arrows <= 0) {
+            this.drawCommandWindowMessage("You don't have any arrows!");
+            return;
+        }
+
+        const { dx, dy } = await this.directionalQuestion("Bow");
+        if (dx === 0 && dy === 0) {
+            return;
+        }
+
+        this.player.arrows -= 1;
+        this.drawStats();
+
+        let curX = this.player.x + dx;
+        let curY = this.player.y + dy;
+        let hitSomething = false;
+
+        while (this.currentMission.inForest(curX, curY)) {
+            const targetSector = this.currentMission.grid[curX][curY];
+
+            if (targetSector.kind !== 'free') {
+                hitSomething = true;
+
+                switch (targetSector.kind) {
+                    case 'monster':
+                        const bowDamage = 4 + Math.round(this.player.exp / 10); // from CAVERN.PAS
+                        targetSector.monster.points -= bowDamage;
+
+                        if (targetSector.monster.points < 0) {
+                            this.drawCommandWindowMessage("You killed the " + targetSector.monster.name);
+                            this.player.gainExperienceFromMonster(targetSector.monster);
+                            this.currentMission.grid[curX][curY] = freeSector();
+                        } else {
+                            this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
+                        }
+                        break;
+
+                    case 'tree':
+                        this.drawCommandWindowMessage("The arrow is stuck in a tree.");
+                        break;
+
+                    case 'chest':
+                        this.drawCommandWindowMessage("The arrow ricocheted off a chest.");
+                        break;
+
+                    case 'castle':
+                        this.drawCommandWindowMessage("The arrow hit a castle wall.");
+                        break;
+
+                    default:
+                        this.drawCommandWindowMessage("The arrow hit something.");
+                        break;
+                }
+
+                this.drawForestNearPlayer();
+                this.drawStats();
+                break;
+            }
+
+            curX += dx;
+            curY += dy;
+        }
+
+        if (!hitSomething) {
+            this.drawCommandWindowMessage("The arrow flew off into the distance.");
         }
     }
 
