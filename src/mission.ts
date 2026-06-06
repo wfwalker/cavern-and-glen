@@ -27,6 +27,10 @@ export function playerSector(): Sector {
     return { kind: "player", trapped: false };
 }
 
+export function castleSector(playerInside: boolean = false): Sector {
+    return { kind: "castle", me_inside: playerInside };
+}
+
 export function treeSector(): Sector {
     return { kind: 'tree', pic: ' ♠ ' };
 }
@@ -55,6 +59,8 @@ export class Mission {
         this.initializeEmptyGrid();
 
         this.initializeTrees();
+
+        this.initializeCastles();
 
         this.putPlayerInForest(thePlayer);
 
@@ -122,6 +128,29 @@ export class Mission {
         for (let i = 0; i < numberOfTrees; i++) {
             this.placeOnRandomFreeSector(treeSector());
         }
+    }
+
+    private initializeCastles() {
+        // 0.4% castles in the forest!
+        const numCastles = Math.round(this.forestRows * this.forestCols * 0.4 / 100);
+
+        for (let i = 0; i < numCastles; i++) {
+            this.placeOnRandomFreeSector(castleSector());
+        }
+    }
+
+    private initializeChests() {
+
+       // MaxChest := Mis_Quota div 2;
+       // for i := 1 to MaxChest do begin
+       //    SetSect(a,b,chest);           {set up the chest}
+       //    if (Random(18)>6) then begin
+       //       Q[a,b].gold := Random(50)+1; Q[a,b].id := 0;
+       //    end else begin
+       //       Q[a,b].id := Random(MaxTreasure)+1; Q[a,b].gold := 0;
+       //    end;
+       // end;
+
     }
 
     private putPlayerInForest(thePlayer) {

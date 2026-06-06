@@ -1,7 +1,7 @@
 // engine.ts
 
 import { Player } from './player';
-import { Mission, freeSector, playerSector } from './mission';
+import { Mission, freeSector, playerSector, castleSector } from './mission';
 import { TextWindow } from './textwindow';
 
 export interface Monster {
@@ -330,6 +330,7 @@ export class CavernGame {
         const newY = this.player.y + dy;
 
         if (this.currentMission.inForest(newX, newY)) {
+            const oldSector = this.currentMission.grid[this.player.x][this.player.y];
             const newSector = this.currentMission.grid[newX][newY];
             switch (newSector.kind) {
                 case 'monster': {
@@ -341,10 +342,19 @@ export class CavernGame {
                     this.drawCommandWindowMessage("collide with chest");
                     break;
                 case 'castle':
-                    this.drawCommandWindowMessage("collide with castle");
+                    this.currentMission.place(this.player.x, this.player.y, freeSector());
+                    this.currentMission.place(newX, newY, castleSector(true));
+                    this.player.x = newX;
+                    this.player.y = newY;            
                     break;
                 case 'free':
-                    this.currentMission.place(this.player.x, this.player.y, freeSector());
+                    // if leaving a castle, just set it to be empty
+                    if (oldSector.kind === 'castle') {
+                        oldSector.me_inside = false;
+                    } else {
+                        this.currentMission.place(this.player.x, this.player.y, freeSector());
+                    }
+
                     this.currentMission.place(newX, newY, playerSector());
                     this.player.x = newX;
                     this.player.y = newY;            
@@ -471,20 +481,25 @@ export class CavernGame {
             for (let x = this.player.x - 3; x <= this.player.x + 3; x++) {
                 // console.log(this.currentMission.forestRows + ", " + this.currentMission.forestCols);
                 if (this.currentMission.inForest(x, y)) {
-                    switch (this.currentMission.grid[x][y].kind) {
+                    const thisSector = this.currentMission.grid[x][y];
+                    switch (thisSector.kind) {
                         // case 'monster': tempRowString += ' X '; break;
                         case 'monster': {
-                            const monsterName = this.currentMission.grid[x][y].monster.name;
+                            const monsterName = thisSector.monster.name;
                             tempRowString += ' ' + monsterName[0] + monsterName[1]; break;
                         }
                         case 'tree':
-                            tempRowString += this.currentMission.grid[x][y].pic; 
+                            tempRowString += thisSector.pic; 
                             break;
                         case 'chest':
                             tempRowString += ' ⌂ ';
                             break;
                         case 'castle':
-                            tempRowString += '« »';
+                            if (thisSector.me_inside) {
+                                tempRowString += '«☻»';
+                            } else {
+                                tempRowString += '« »';
+                            }
                             break;
                         case 'free':
                             tempRowString += ' · ';
