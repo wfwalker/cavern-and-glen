@@ -17,6 +17,6 @@
     { "kind": "other", "name": "Dragon's Tooth", "power": 3 },
     { "kind": "other", "name": "Ring", "power": 4 },
     { "kind": "other", "name": "Spellbook", "power": 4 },
-    { "kind": "other", "name": "Lantern", "power": 4 },
+    { "kind": "other", "name": "Lantern", "power": 4 }
   ]
 }

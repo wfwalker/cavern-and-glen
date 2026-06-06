@@ -11,6 +11,12 @@ export interface Monster {
     invisible: boolean;
 }
 
+export type Item =
+    | { kind: 'armor'; name: string; points: number }
+    | { kind: 'sword'; name: string; strength: number }
+    | { kind: 'other'; name: string; power: number }
+
+
 // Define the different stages of our game
 type GameMode = 'TITLE' | 'CHARACTER_CREATION' | 'PLAYING' | 'GAME_OVER';
 
@@ -34,6 +40,7 @@ export class CavernGame {
     public currentMission: Mission;
 
     public monsterList: Monster[];
+    public itemList: Item[];
 
     // A placeholder to store a callback function when a prompt is waiting
 
@@ -50,6 +57,7 @@ export class CavernGame {
 
     constructor(canvasId: string) {
         this.loadMonsterList();
+        this.loadItemList();
 
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         this.ctx = this.canvas.getContext('2d')!;
@@ -422,7 +430,7 @@ export class CavernGame {
         this.writeAt(53,  6, " T  -- Tree");
         this.writeAt(53,  7, " .  -- Free Space");
         this.writeAt(53,  8, "« » -- Castle");
-        this.writeAt(53,  9, " P  -- Yourself");
+        this.writeAt(53,  9, " \u263B  -- Yourself");
         this.writeAt(53, 10, " +  -- Edge of forest");
         this.writeAt(53, 11, " Sn -- Monster");
         this.writeAt(53, 12, " T  -- Tresure Chest");
@@ -496,7 +504,7 @@ export class CavernGame {
                             break;
                         case 'castle':
                             if (thisSector.me_inside) {
-                                tempRowString += '«☻»';
+                                tempRowString += '«\u263A»';
                             } else {
                                 tempRowString += '« »';
                             }
@@ -505,7 +513,7 @@ export class CavernGame {
                             tempRowString += ' · ';
                             break;
                         case 'player':
-                            tempRowString += ' ☻ ';
+                            tempRowString += ' \u263B ';
                             break;
                     }
                 } else {
@@ -521,6 +529,13 @@ export class CavernGame {
         const monsters = await response.json();
         console.log(monsters);
         this.monsterList = monsters.monsterList;
+    }
+
+    private async loadItemList() {
+        const response = await fetch('./items.json');
+        const items = await response.json();
+        console.log(items);
+        this.itemList = items.itemList;
     }
 
     private gameLoop(timestamp: number) {
