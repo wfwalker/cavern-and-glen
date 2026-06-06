@@ -20,6 +20,13 @@ export type Item =
 // Define the different stages of our game
 type GameMode = 'TITLE' | 'CHARACTER_CREATION' | 'PLAYING' | 'GAME_OVER';
 
+export const adjacentSectors = [
+    { dx: -1, dy: -1 }, { dx: -1, dy: 0 }, { dx: -1, dy: 1 },
+    { dx:  0, dy: -1 },                    { dx:  0, dy: 1 },
+    { dx:  1, dy: -1 }, { dx:  1, dy: 0 }, { dx:  1, dy: 1 }
+];
+
+
 export class CavernGame {
     private canvas: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
@@ -224,6 +231,7 @@ export class CavernGame {
                 this.displayHelp();
                 break;
         }
+        this.doMonsters();
         this.drawForestNearPlayer();
     }
 
@@ -371,13 +379,7 @@ export class CavernGame {
     }
 
     private doOpenChest() {
-        const directions = [
-            { dx: -1, dy: -1 }, { dx: -1, dy: 0 }, { dx: -1, dy: 1 },
-            { dx:  0, dy: -1 },                    { dx:  0, dy: 1 },
-            { dx:  1, dy: -1 }, { dx:  1, dy: 0 }, { dx:  1, dy: 1 }
-        ];
-
-        for (const { dx, dy } of directions) {
+        for (const { dx, dy } of adjacentSectors) {
             const targetX = this.player.x + dx;
             const targetY = this.player.y + dy;
 
@@ -404,6 +406,34 @@ export class CavernGame {
         }
 
         this.drawCommandWindowMessage("No chest nearby.");
+    }
+
+    private doMonsters() {
+        const playerArmorPoints = 0; // TODO: implement method on Player for this
+        const playerSector = this.currentMission.grid[this.player.x][this.player.y];
+        const playerInCastle = playerSector.kind === "castle";
+
+        for (const { dx, dy } of adjacentSectors) {
+            const targetX = this.player.x + dx;
+            const targetY = this.player.y + dy;
+
+            if (this.currentMission.inForest(targetX, targetY)) {
+                const targetSector = this.currentMission.grid[targetX][targetY];
+
+                if (targetSector.kind === 'monster') {
+                    const attackingMonster = targetSector.monster;
+                    console.log(`adjacent monster, player in castle ${playerInCastle}`);
+                    if (playerInCastle) {
+                        this.drawCommandWindowMessage(`The ${targetSector.monster.name} misses`);
+                    } else {
+                        const damage = Math.round((attackingMonster.points / 8) +  (Math.random() * 3) + (attackingMonster.worth / 4) - playerArmorPoints);
+                        this.player.takeDamage(damage);
+                        this.drawCommandWindowMessage(`The ${targetSector.monster.name} hits`);
+                        this.drawStats();
+                    }
+                }
+            }
+        }
     }
 
     private handleCreationKeys(key: string, event: KeyboardEvent) {
@@ -485,7 +515,6 @@ export class CavernGame {
         }
     }
 
-    // Inside your main game coordination loop
     public async directionalQuestion(prompt: string): { dx: number, dy: number } {
         // Game pauses right here naturally until the player presses a valid key!
         const { dx, dy } = await this.commandWindow.askDirection(prompt);
