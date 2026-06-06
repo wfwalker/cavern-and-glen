@@ -1,0 +1,22 @@
+{
+  "itemList": [
+    { "kind": "armor", "name": "Lead Helmet", "points": 2 },
+    { "kind": "armor", "name": "Gauntlets", "points": 3 },
+    { "kind": "armor", "name": "Helmet", "points": 3 },
+    { "kind": "armor", "name": "Shield", "points": 5 },
+    { "kind": "armor", "name": "Plate Mail", "points": 10 },
+
+    { "kind": "sword", "name": "Dagger", "strength": 1 },
+    { "kind": "sword", "name": "Iron Sword", "strength": 2 },
+    { "kind": "sword", "name": "Holy Sword", "strength": 3 },
+
+    { "kind": "other", "name": "Amulet", "power": 1 },
+    { "kind": "other", "name": "Potion", "power": 1 },
+    { "kind": "other", "name": "Magic Boots", "power": 2 },
+    { "kind": "other", "name": "Wand", "power": 2 },
+    { "kind": "other", "name": "Dragon's Tooth", "power": 3 },
+    { "kind": "other", "name": "Ring", "power": 4 },
+    { "kind": "other", "name": "Spellbook", "power": 4 },
+    { "kind": "other", "name": "Lantern", "power": 4 },
+  ]
+}
