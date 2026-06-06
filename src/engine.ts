@@ -82,7 +82,7 @@ export class CavernGame {
     public writeAt(x: number, y: number, text: string, color = '#33ff33', bgColor = '#000000') {
         // Adjusting Pascal's 1-based indexing safely to 0-based indexing
         let cursorX = x - 1;
-        let cursorY = y - 1;
+        const cursorY = y - 1;
 
         for (let i = 0; i < text.length; i++) {
             if (cursorX >= 0 && cursorX < this.COLS && cursorY >= 0 && cursorY < this.ROWS) {
@@ -236,8 +236,8 @@ export class CavernGame {
                 case 'castle':
                     this.drawCommandWindowMessage("You hit a castle");
                     break;
-                case 'monster':
-                    var damage = this.player.swordDamage();
+                case 'monster': {
+                    const damage = this.player.swordDamage();
                     console.log("damage " + damage);
                     targetSector.monster.points -= damage;
                     console.log(targetSector.monster);
@@ -278,6 +278,7 @@ export class CavernGame {
                     }
 
                     break;
+                }
             }
 
         } else {
@@ -325,16 +326,17 @@ export class CavernGame {
 
     private movePlayer(dx: number, dy: number) {
         console.log("movePlayer " + dx + "," + dy);
-        var newX = this.player.x + dx;
-        var newY = this.player.y + dy;
+        const newX = this.player.x + dx;
+        const newY = this.player.y + dy;
 
         if (this.currentMission.inForest(newX, newY)) {
             const newSector = this.currentMission.grid[newX][newY];
             switch (newSector.kind) {
-                case 'monster':
+                case 'monster': {
                     const monsterName = newSector.monster.name;
                     this.drawCommandWindowMessage("collide with " + monsterName);
                     break;
+                }
                 case 'chest':
                     this.drawCommandWindowMessage("collide with chest");
                     break;
@@ -465,15 +467,16 @@ export class CavernGame {
         //get player location
         // console.log(this.player);
         for (let y = this.player.y + 3; y >= this.player.y -  3; y--) {
-            var tempRowString = '';
+            let tempRowString = '';
             for (let x = this.player.x - 3; x <= this.player.x + 3; x++) {
                 // console.log(this.currentMission.forestRows + ", " + this.currentMission.forestCols);
                 if (this.currentMission.inForest(x, y)) {
                     switch (this.currentMission.grid[x][y].kind) {
                         // case 'monster': tempRowString += ' X '; break;
-                        case 'monster':
+                        case 'monster': {
                             const monsterName = this.currentMission.grid[x][y].monster.name;
                             tempRowString += ' ' + monsterName[0] + monsterName[1]; break;
+                        }
                         case 'tree':
                             tempRowString += this.currentMission.grid[x][y].pic; 
                             break;

@@ -96,8 +96,7 @@ export class TextWindow {
         // 4. Mimic Pascal's writeln(dir) by echoing the character back (optional)
         // We adjust the window's cursor position or log history if desired.
 
-        let dx = 0;
-        let dy = 0;
+        let dx, dy;
 
         // 5. Evaluate the vintage 8-way navigation block
         switch (key.toLowerCase()) {
