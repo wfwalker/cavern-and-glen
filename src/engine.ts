@@ -427,30 +427,30 @@ export class CavernGame {
         this.writeAt(60,  1, "Wm Walker Software");
         this.writeAt(60,  2, "VERSION 1.7");
         this.writeAt(53,  5, "MAP KEY");
-        this.writeAt(53,  6, " T  -- Tree");
-        this.writeAt(53,  7, " .  -- Free Space");
-        this.writeAt(53,  8, "« » -- Castle");
+        this.writeAt(53,  6, " \u2660  -- Tree");
+        this.writeAt(53,  7, " \u00B7  -- Free Space");
+        this.writeAt(53,  8, "\u00AB \u00BB -- Castle");
         this.writeAt(53,  9, " \u263B  -- Yourself");
         this.writeAt(53, 10, " +  -- Edge of forest");
         this.writeAt(53, 11, " Sn -- Monster");
-        this.writeAt(53, 12, " T  -- Tresure Chest");
+        this.writeAt(53, 12, " \u2302  -- Tresure Chest");
 
         this.writeAt(52, 18, "NAME: " + this.player.name);
 
         for (let i = 1; i <= 79; i++) {
-            this.writeAt(i,19, '─');
+            this.writeAt(i,19, '\u2500');
         }
         for (let i = 1; i <= 18; i++) {
-            this.writeAt(1, i, "│");
-            this.writeAt(25, i, "│");
-            this.writeAt(51, i, "│");
+            this.writeAt(1, i, "\u2502");
+            this.writeAt(25, i, "\u2502");
+            this.writeAt(51, i, "\u2502");
         }
         for (let i = 19; i <= 25; i++) {
-            this.writeAt(1, i, "│");
+            this.writeAt(1, i, "\u2502");
         }
-        this.writeAt(1,19, "├");
-        this.writeAt(25,19, "┴");
-        this.writeAt(51,19, "┴");
+        this.writeAt(1,19, "\u251C");
+        this.writeAt(25,19, "\u2534");
+        this.writeAt(51,19, "\u2534");
 
         this.drawForestNearPlayer();  
         this.drawStats(false);

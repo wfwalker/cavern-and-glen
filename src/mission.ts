@@ -32,7 +32,7 @@ export function castleSector(playerInside: boolean = false): Sector {
 }
 
 export function treeSector(): Sector {
-    return { kind: 'tree', pic: ' ♠ ' };
+    return { kind: 'tree', pic: ' \u2660 ' };
 }
 
 export function monsterSector(monster: Monster): Sector {
