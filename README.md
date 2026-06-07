@@ -12,7 +12,7 @@ Parity with 1985:
 * [X] monster attacks and damage to player
 * [ ] castle -- buy arrows, exit when mission is done
 * [ ] some way to load and save characters
-* [ ] invert stats display (low points?)
+* [X] invert stats display (low points?)
 
 Infrastructure:
 * [ ] better unit tests

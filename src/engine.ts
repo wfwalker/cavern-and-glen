@@ -162,24 +162,28 @@ export class CavernGame {
                 return; // Stop execution here! Do NOT run standard gameplay inputs.
             }
 
-            console.log("handle key " + key + " in mode " + this.currentMode);
-
-            // 2. Route the keypress based on the active mode
-            switch (this.currentMode) {
-                case 'TITLE':
-                    this.handleTitleKeys(key);
-                    break;
-                case 'CHARACTER_CREATION':
-                    this.handleCreationKeys(key);
-                    break;
-                case 'PLAYING':
-                    this.handleGameplayKeys(key);
-                    break;
-                case 'GAME_OVER':
-                    this.handleGameOverKeys(key);
-                    break;
-            }
+            this.handleKeys(key);
         });
+    }
+
+    private handleKeys(key: string) {
+        console.log("handle key " + key + " in mode " + this.currentMode);
+
+        // 2. Route the keypress based on the active mode
+        switch (this.currentMode) {
+            case 'TITLE':
+                this.handleTitleKeys(key);
+                break;
+            case 'CHARACTER_CREATION':
+                this.handleCreationKeys(key);
+                break;
+            case 'PLAYING':
+                this.handleGameplayKeys(key);
+                break;
+            case 'GAME_OVER':
+                this.handleGameOverKeys(key);
+                break;
+        }        
     }
 
     private handleTitleKeys(key: string) {
