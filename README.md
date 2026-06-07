@@ -5,11 +5,11 @@ Typescript port of original CAVERN.PAS game "Cavern and Glen"
 
 
 Parity with 1985:
-* [ ] implement bow and arrow attacks
-* [ ] load data file for swords and magic items
+* [X] implement bow and arrow attacks
+* [X] load data file for swords and magic items
 * [ ] swords with different strengths, wear and breakage
-* [ ] classic monster movement
-* [ ] monster attacks and damage to player
+* [X] classic monster movement
+* [X] monster attacks and damage to player
 * [ ] castle -- buy arrows, exit when mission is done
 * [ ] some way to load and save characters
 * [ ] invert stats display (low points?)
