@@ -74,6 +74,10 @@ export class Mission {
         this.initializeMonsters(monsterList);
     }
 
+    public missionCompleted(): boolean {
+        return this.objective.quota == 0;
+    }
+
     public inForest(x: number, y: number): boolean {
         return ((x >= 0) && (x < this.forestRows) && (y >= 0) && (y < this.forestCols));
     }
@@ -93,7 +97,7 @@ export class Mission {
     private findRandomFreeCoordinate(): { x: number, y: number } | null {
         const freeSpots: { x: number; y: number }[] = [];
 
-        // 1. Scan the entire 80x25 matrix
+        // 1. Scan the entire grid
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
                 // Check if this specific matrix tile matches our type guard
@@ -111,6 +115,21 @@ export class Mission {
         // 3. Grab a completely random index from our collection of open Sectors
         const randomIndex = Math.floor(Math.random() * freeSpots.length);
         return freeSpots[randomIndex];
+    }
+
+    public monstersInForest(): { x: number, y: number }[] {
+        const monsterSpots: { x: number; y: number }[] = [];
+
+        for (let y = 0; y < this.grid.length; y++) {
+            for (let x = 0; x < this.grid[y].length; x++) {
+                // Check if this specific matrix tile matches our type guard
+                if (this.grid[x][y].kind === 'monster') {
+                    monsterSpots.push({ x, y });
+                }
+            }
+        }
+
+        return monsterSpots;
     }
 
     public place(x: number, y: number, something: Sector) {

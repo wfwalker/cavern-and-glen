@@ -235,6 +235,16 @@ export class CavernGame {
         this.drawForestNearPlayer();
     }
 
+    private handleGameOverKeys(key: string) {
+        if (key === 'enter') {
+            this.currentMode = 'TITLE';
+            this.titlePage();
+        } else {
+            this.drawCommandWindowMessage("Press Enter to continue");
+        }
+        console.log(`game over ${key}`);
+    }
+
     private async doSword() {
         const { dx, dy } = await this.directionalQuestion("Sword");
         console.log("doSword deltas " + dx + ", " + dy);
@@ -280,21 +290,6 @@ export class CavernGame {
                             this.currentMission.decrementTargetMonsterQuota();
                             this.drawStats();
                         }
-
-                        // TODO: update locations of all monsters (needed for motion)
-
-                        // scan := 0;
-                        // repeat
-                        //   scan := scan + 1;
-                        // until ((x[scan]=i) and (y[scan]=j)) or (scan > Num_monster);
-
-                        // if (scan<=Num_monster) then begin
-                        //   x[scan] := x[Num_monster]; y[scan] := y[Num_monster];
-                        //   Num_monster := Num_monster - 1;
-                        // end;
-
-                        // Tell_mission;
-
                     } else {
                         this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
                     }
@@ -426,11 +421,49 @@ export class CavernGame {
                     if (playerInCastle) {
                         this.drawCommandWindowMessage(`The ${targetSector.monster.name} misses`);
                     } else {
-                        const damage = Math.round((attackingMonster.points / 8) +  (Math.random() * 3) + (attackingMonster.worth / 4) - playerArmorPoints);
-                        this.player.takeDamage(damage);
+                        const damage = Math.round(
+                            (attackingMonster.points / 8) +
+                            (Math.random() * 3) +
+                            (attackingMonster.worth / 4));
+                        this.player.takeDamage(damage - playerArmorPoints);
                         this.drawCommandWindowMessage(`The ${targetSector.monster.name} hits`);
                         this.drawStats();
+
+                        if (this.player.exp <= 0) {
+                            this.drawCommandWindowMessage(`You died, ${this.player.name}`);
+                            this.drawCommandWindowMessage("Press Enter to continue");
+                            this.currentMode = 'GAME_OVER';
+                        }
                     }
+                }
+            }
+        }
+
+        if (! playerInCastle) {
+            const monsterCoords = this.currentMission.monstersInForest();
+
+            for (const coord of monsterCoords) {
+                if ((Math.random() * 10) > 3) {
+                    let deltaX = 0;
+                    if (coord.x < this.player.x) { deltaX = 1; }
+                    if (coord.x > this.player.x) { deltaX = -1; }
+
+                    let deltaY = 0;
+                    if (coord.y < this.player.y) { deltaY = 1; }
+                    if (coord.y > this.player.y) { deltaY = -1; }
+
+                    const newX = coord.x + deltaX;
+                    const newY = coord.y + deltaY;
+
+                    console.log(`moving ${coord.x} ${coord.y} to ${newX} ${newY}`);
+
+                    if (this.currentMission.grid[newX][newY].kind === 'free') {
+                        console.log("move this guy");
+                        console.log(this.currentMission.grid[coord.x][coord.y]);
+                        this.currentMission.grid[newX][newY] = structuredClone(this.currentMission.grid[coord.x][coord.y]);
+                        this.currentMission.grid[coord.x][coord.y] = freeSector();
+                    }
+
                 }
             }
         }
