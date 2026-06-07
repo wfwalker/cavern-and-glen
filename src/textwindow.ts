@@ -61,18 +61,18 @@ export class TextWindow {
     /**
      * Appends a line sequentially, automatically evaluating boundary overflows
      */
-    public writeLine(text: string, color: string = '#33ff33', bgColor: string = '#000000') {
+    public writeLine(text: string) {
         const printable = text.substring(0, this.width).padEnd(this.width, ' ');
 
         if (this.cursorY > this.height) {
-            this.scrollUp(bgColor);
+            this.scrollUp('#000000');
             this.cursorY = this.height;
         }
 
         const absoluteX = this.bounds.x1 + (this.cursorX - 1);
         const absoluteY = this.bounds.y1 + (this.cursorY - 1);
 
-        this.game.writeAt(absoluteX, absoluteY, printable, color, bgColor);
+        this.game.writeAt(absoluteX, absoluteY, printable);
 
         this.cursorX = 1;
         this.cursorY++;

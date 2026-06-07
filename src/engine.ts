@@ -52,6 +52,7 @@ export class CavernGame {
     // A placeholder to store a callback function when a prompt is waiting
 
     private activePromptResolver: ((key: string) => void) | null = null;   
+
     /**
      * Public helper that lets the TextWindow register its temporary listener hook
      */
@@ -94,14 +95,21 @@ export class CavernGame {
     }
 
     // Direct replacement for Pascal's GotoXY and Write
-    public writeAt(x: number, y: number, text: string, color = '#33ff33', bgColor = '#000000') {
+    public writeAt(x: number, y: number, text: string, inverse: boolean = false) {
+        let fgColor = '#33ff33';
+        let bgColor = '#000000';
+
+        if (inverse) {
+            bgColor = '#33ff33'; fgColor = '#000000';
+        }
+
         // Adjusting Pascal's 1-based indexing safely to 0-based indexing
         let cursorX = x - 1;
         const cursorY = y - 1;
 
         for (let i = 0; i < text.length; i++) {
             if (cursorX >= 0 && cursorX < this.COLS && cursorY >= 0 && cursorY < this.ROWS) {
-                this.screenBuffer[cursorY][cursorX] = [text[i], color, bgColor];
+                this.screenBuffer[cursorY][cursorX] = [text[i], fgColor, bgColor];
                 cursorX++;
             }
         }
@@ -239,9 +247,8 @@ export class CavernGame {
         if (key === 'enter') {
             this.currentMode = 'TITLE';
             this.titlePage();
-        } else {
-            this.drawCommandWindowMessage("Press Enter to continue");
         }
+
         console.log(`game over ${key}`);
     }
 
@@ -428,7 +435,7 @@ export class CavernGame {
                             (attackingMonster.worth / 4));
                         this.player.takeDamage(damage - playerArmorPoints);
                         this.drawCommandWindowMessage(`The ${targetSector.monster.name} hits`);
-                        this.drawStats();
+                        this.drawStats(true);
 
                         if (this.player.exp <= 0) {
                             this.drawCommandWindowMessage(`You died, ${this.player.name}`);
@@ -609,7 +616,7 @@ export class CavernGame {
         this.writeAt(53, 11, " Sn -- Monster");
         this.writeAt(53, 12, " \u2302  -- Tresure Chest");
 
-        this.writeAt(52, 18, "NAME: " + this.player.name);
+        this.writeAt(52, 18, `NAME: ${this.player.name}`);
 
         for (let i = 1; i <= 79; i++) {
             this.writeAt(i,19, '\u2500');
@@ -631,28 +638,10 @@ export class CavernGame {
     }
 
     private drawStats(inverse: boolean) {
-        this.writeAt(3, 15, "Points =" + this.player.exp.toString().padStart(9));
+        this.writeAt(3, 15, "Points =" + this.player.exp.toString().padStart(9), inverse);
         this.writeAt(3, 16, "Arrows =" + this.player.arrows.toString().padStart(9));
         this.writeAt(3, 17, "Gold   =" + this.player.gold.toString().padStart(9));
         this.writeAt(3, 18, this.currentMission.status());
-
-        // procedure Plot_Stats(inv: boolean);
-        // {Plot the player's stats on the command window}
-        // begin
-        //    O_Window;
-        //    gotoXY(1,15);
-
-        //    if inv then begin
-        //       TextBackground(15); TextColor(0);
-        //       writeln(' Points =',exp:9:0);
-        //       TextBackground(0); TextColor(7);
-        //    end else
-        //       writeln(' Points =',exp:9:0);
-
-        //    writeln(' Arrows =',arrows:9); writeln(' Gold   =',gold:9);
-        // end;
-
-
     }
 
     private drawForestNearPlayer() {
