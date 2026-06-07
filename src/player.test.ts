@@ -4,7 +4,7 @@ import { Player } from './player';
 describe('Player Class', () => {
     it('should correctly calculate a relative location based on deltas', () => {
         // 1. Arrange: Create a player instance at a known starting coordinate
-        const player = new Player();
+        const player = new Player("test guy 1");
         player.x = 10;
         player.y = 15;
 
@@ -16,7 +16,7 @@ describe('Player Class', () => {
     });
 
     it('should handle negative and zero movement deltas safely', () => {
-        const player = new Player();
+        const player = new Player("test guy 2");
         player.x = 5;
         player.y = 5;
 

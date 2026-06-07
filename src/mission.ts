@@ -216,7 +216,7 @@ export class Mission {
     }
 
     // Determine what the player needs to kill based on level
-    private determineObjective(monsterList): MissionObjective {
+    private determineObjective(monsterList: Monster[]): MissionObjective {
         // our target monster is the first one with more points than the player has experience
         const foundMonster = monsterList.find(monster => monster.points > this.playerExp);
 

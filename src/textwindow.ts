@@ -1,4 +1,4 @@
-import { CavernGame } from './engine'; // Adjust path to your engine file
+import { CavernGame } from './engine';
 
 export interface WindowBounds {
     x1: number; // 1-based Turbo Pascal style column
@@ -25,11 +25,11 @@ export class TextWindow {
     /**
      * Clears the window bounds inside your actual screen buffer layout
      */
-    public clear(bgColor: string = '#000000') {
+    public clear() {
         for (let y = this.bounds.y1; y <= this.bounds.y2; y++) {
             // Fill the row with empty spaces using your native engine method
             const spaces = ' '.repeat(this.width);
-            this.game.writeAt(this.bounds.x1, y, spaces, '#FFFFFF', bgColor);
+            this.game.writeAt(this.bounds.x1, y, spaces);
         }
         this.cursorX = 1;
         this.cursorY = 1;
@@ -39,7 +39,7 @@ export class TextWindow {
      * Loops through your screenBuffer memory array, copies lines upward,
      * and re-renders the changed characters.
      */
-    public scrollUp(bgColor: string = '#000000') {
+    public scrollUp() {
         // 1. Loop through the row boundaries of this specific sub-viewport
         for (let relativeY = 1; relativeY < this.height; relativeY++) {
             const currentAbsY = this.bounds.y1 + (relativeY - 1);
@@ -48,14 +48,14 @@ export class TextWindow {
             // pull up the next line, char by char
             for (let absX = this.bounds.x1; absX <= this.bounds.x2; absX++) {
                 const sourceCell = this.game.screenBuffer[nextAbsY - 1][absX - 1]; 
-                this.game.writeAt(absX, currentAbsY, sourceCell);
+                this.game.writeAt(absX, currentAbsY, sourceCell); // TODO this looks wrong!!
             }
         }
 
         // 3. Wipe clean the newly vacated bottom row line 
         const bottomAbsY = this.bounds.y2;
         const blankSpaceLine = ' '.repeat(this.width);
-        this.game.writeAt(this.bounds.x1, bottomAbsY, [blankSpaceLine, '#FFFFFF', bgColor]);
+        this.game.writeAt(this.bounds.x1, bottomAbsY, blankSpaceLine);
     }
 
     /**
@@ -65,7 +65,7 @@ export class TextWindow {
         const printable = text.substring(0, this.width).padEnd(this.width, ' ');
 
         if (this.cursorY > this.height) {
-            this.scrollUp('#000000');
+            this.scrollUp();
             this.cursorY = this.height;
         }
 
@@ -117,7 +117,7 @@ export class TextWindow {
 
             default:
                 // Replicates the Pascal fallback error routine
-                this.game.writeAt(this.bounds.x1, this.bounds.y2, " I did not understand that.", '#FF5555', '#000000');
+                this.game.writeAt(this.bounds.x1, this.bounds.y2, " I did not understand that.");
                 dx = 999;
                 dy = 999;
                 break;

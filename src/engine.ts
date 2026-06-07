@@ -1,6 +1,7 @@
 // engine.ts
 
 import { Player } from './player';
+import { GameMode, TitleMode, CharacterCreationMode, PlayingMode, MissionEndedMode } from './gamemode'
 import { Mission, freeSector, playerSector, castleSector } from './mission';
 import { TextWindow } from './textwindow';
 
@@ -17,9 +18,6 @@ export type Item =
     | { kind: 'other'; name: string; power: number }
 
 
-// Define the different stages of our game
-type GameMode = 'TITLE' | 'CHARACTER_CREATION' | 'PLAYING' | 'GAME_OVER';
-
 export const adjacentSectors = [
     { dx: -1, dy: -1 }, { dx: -1, dy: 0 }, { dx: -1, dy: 1 },
     { dx:  0, dy: -1 },                    { dx:  0, dy: 1 },
@@ -32,7 +30,7 @@ export class CavernGame {
     private ctx: CanvasRenderingContext2D;
 
     // Track the current mode
-    private currentMode: GameMode = 'TITLE';
+    private currentMode: GameMode = new TitleMode(this);
 
     // Text terminal dimensions (classic IBM PC text mode)
     private readonly COLS = 80;
@@ -43,11 +41,11 @@ export class CavernGame {
     private commandWindow: TextWindow;
 
     // the current player of this game
-    public player!: Player;
+    public player: Player;
     public currentMission: Mission;
 
-    public monsterList: Monster[];
-    public itemList: Item[];
+    public monsterList: Monster[] = [];
+    public itemList: Item[] = [];
 
     // A placeholder to store a callback function when a prompt is waiting
 
@@ -127,6 +125,14 @@ export class CavernGame {
         this.commandWindow.writeLine(message);
     }
 
+    public setGameMode(inMode: GameMode) {
+        this.currentMode = inMode;
+    }
+
+    public getGameMode(): GameMode {
+        return this.currentMode;
+    }
+
     public titlePage() {
         this.clearScreen();
         this.writeAt(29, 5, 'C a v e r n  &  G l e n');
@@ -162,101 +168,22 @@ export class CavernGame {
                 return; // Stop execution here! Do NOT run standard gameplay inputs.
             }
 
-            this.handleKeys(key);
+            // the GameMode object handles keyboard commands appropriate for the current mode
+            this.currentMode.handleKey(key);
         });
     }
 
-    private handleKeys(key: string) {
-        console.log("handle key " + key + " in mode " + this.currentMode);
-
-        // 2. Route the keypress based on the active mode
-        switch (this.currentMode) {
-            case 'TITLE':
-                this.handleTitleKeys(key);
-                break;
-            case 'CHARACTER_CREATION':
-                this.handleCreationKeys(key);
-                break;
-            case 'PLAYING':
-                this.handleGameplayKeys(key);
-                break;
-            case 'GAME_OVER':
-                this.handleGameOverKeys(key);
-                break;
-        }        
-    }
-
-    private handleTitleKeys(key: string) {
-        if (key === 'n') {
-            this.currentMode = 'CHARACTER_CREATION';
-            this.playerNameInput = ""; // Clear out any previous name junk
-            this.displayCharacterCreationScreen();
-        } else if (key === 'm') {
-            this.currentMode = 'PLAYING';
-            this.currentMission = new Mission(this.player, this.monsterList, this.itemList);
-
-            this.drawGameScreen();
-            this.drawStats();
-        }
-    }
-
-    public displayCharacterCreationScreen() {
+    public displayCharacterCreationScreen(prompt: string) {
         this.clearScreen();
 
         // Draw an interface instruction box
         this.writeAt(5, 5, "What is your name?");
-
-        // Render the input text bar centrally
-        // We add an underscore at the end to act as our blinking terminal cursor
-        const dynamicPromptString = `> ${this.playerNameInput}_`;
                 
         // Draw the active text input line inside a black prompt bar box
-        this.writeAt(25, 5, dynamicPromptString);
+        this.writeAt(25, 5, prompt);
     }
 
-    private handleGameplayKeys(key: string) {
-        console.log("handlePlayerCommand " + key);
-
-        switch(key) {
-            // Movement keys mapping to your original layout
-            case 'q': this.movePlayer(-1,  1); break;
-            case 'w': this.movePlayer( 0,  1); break;
-            case 'e': this.movePlayer( 1,  1); break;
-            case 'a': this.movePlayer(-1,  0); break;
-            case 'd': this.movePlayer( 1,  0); break;
-            case 'z': this.movePlayer(-1, -1); break;
-            case 'x': this.movePlayer( 0, -1); break;
-            case 'c': this.movePlayer( 1, -1); break;
-            
-            // Action keys
-            case 'b':
-                this.doBow();
-                break;
-            case 's':
-                 this.doSword();
-                 break;
-            case 'o':
-                this.doOpenChest();
-                break;
-            case 'u': /* Use Item */; break;
-            case 'h':
-                this.displayHelp();
-                break;
-        }
-        this.doMonsters();
-        this.drawForestNearPlayer();
-    }
-
-    private handleGameOverKeys(key: string) {
-        if (key === 'enter') {
-            this.currentMode = 'TITLE';
-            this.titlePage();
-        }
-
-        console.log(`game over ${key}`);
-    }
-
-    private async doSword() {
+    public async doSword() {
         const { dx, dy } = await this.directionalQuestion("Sword");
         console.log("doSword deltas " + dx + ", " + dy);
         const newLoc = this.player.relativeLocation(dx, dy);
@@ -289,7 +216,7 @@ export class CavernGame {
 
                         // update stats from new experience
                         this.player.gainExperienceFromMonster(targetSector.monster);
-                        this.drawStats();
+                        this.drawStats(false);
 
                         //  clear the grid Sector where the monster was
                         this.currentMission.grid[newLoc.x][newLoc.y] = freeSector();
@@ -299,7 +226,7 @@ export class CavernGame {
                         if (this.currentMission.objective.targetMonster.name === targetSector.monster.name)
                         {
                             this.currentMission.decrementTargetMonsterQuota();
-                            this.drawStats();
+                            this.drawStats(false);
                         }
                     } else {
                         this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
@@ -315,7 +242,7 @@ export class CavernGame {
         }
     }
 
-    private async doBow() {
+    public async doBow() {
         if (this.player.arrows <= 0) {
             this.drawCommandWindowMessage("You don't have any arrows!");
             return;
@@ -327,7 +254,7 @@ export class CavernGame {
         }
 
         this.player.arrows -= 1;
-        this.drawStats();
+        this.drawStats(false);
 
         let curX = this.player.x + dx;
         let curY = this.player.y + dy;
@@ -372,7 +299,7 @@ export class CavernGame {
                 }
 
                 this.drawForestNearPlayer();
-                this.drawStats();
+                this.drawStats(false);
                 break;
             }
 
@@ -385,7 +312,7 @@ export class CavernGame {
         }
     }
 
-    private doOpenChest() {
+    public doOpenChest() {
         for (const { dx, dy } of adjacentSectors) {
             const targetX = this.player.x + dx;
             const targetY = this.player.y + dy;
@@ -405,7 +332,7 @@ export class CavernGame {
                         this.drawCommandWindowMessage("The chest was empty of gold.");
                     }
 
-                    this.drawStats();
+                    this.drawStats(false);
                     this.drawForestNearPlayer();
                     return;
                 }
@@ -415,7 +342,7 @@ export class CavernGame {
         this.drawCommandWindowMessage("No chest nearby.");
     }
 
-    private doMonsters() {
+    public doMonsters() {
         const playerArmorPoints = 0; // TODO: implement method on Player for this
         const playerSector = this.currentMission.grid[this.player.x][this.player.y];
         const playerInCastle = playerSector.kind === "castle";
@@ -444,7 +371,7 @@ export class CavernGame {
                         if (this.player.exp <= 0) {
                             this.drawCommandWindowMessage(`You died, ${this.player.name}`);
                             this.drawCommandWindowMessage("Press Enter to continue");
-                            this.currentMode = 'GAME_OVER';
+                            this.setGameMode(new MissionEndedMode(this));
                         }
                     }
                 }
@@ -481,44 +408,7 @@ export class CavernGame {
         }
     }
 
-    private handleCreationKeys(key: string, event: KeyboardEvent) {
-        // 1. If they hit Enter, save the name and start the mission!
-        if (key === 'enter') {
-            if (this.playerNameInput.trim().length === 0) {
-                // Don't let them have a blank name
-                this.playerNameInput = "Hero"; 
-            }
-            
-            // Transfer the typed buffer directly to your state object
-            this.player = new Player(this.playerNameInput);
-            console.log(this.player);
-            
-            // Go back to Title screen
-            this.currentMode = 'TITLE';
-            this.titlePage();
-            return;
-        }
-
-        // 2. Handle Backspace to remove characters
-        if (key === 'backspace') {
-            this.playerNameInput = this.playerNameInput.slice(0, -1);
-            this.displayCharacterCreationScreen(); // Redraw screen to clear out deleted char
-            return;
-        }
-
-        // 3. Catch actual readable characters (A-Z, numbers, spaces)
-        // Checking key.length === 1 filters out actions like 'Shift' or 'ArrowUp'
-        // if (key.length === 1 && this.playerNameInput.length < this.MAX_NAME_LENGTH) {
-        if (key.length === 1) {
-            this.playerNameInput += key;
-            console.log("player name input now " + this.playerNameInput);
-            this.displayCharacterCreationScreen(); // Redraw with the new letter added
-        } else {
-            console.log("did not like " + key +   " " + this.playerNameInput + " " + this.MAX_NAME_LENGTH);
-        }
-    }
-
-    private movePlayer(dx: number, dy: number) {
+    public movePlayer(dx: number, dy: number) {
         console.log("movePlayer " + dx + "," + dy);
         const newX = this.player.x + dx;
         const newY = this.player.y + dy;
@@ -574,7 +464,7 @@ export class CavernGame {
     }
 
 
-    private displayHelp() {
+    public displayHelp() {
         this.drawCommandWindowMessage(" q  w  e   │  b ── bow");
         this.drawCommandWindowMessage("  \\ │ /    │  s ── sword");
         this.drawCommandWindowMessage(" a ─── d   │  o ── open chest");
@@ -606,7 +496,7 @@ export class CavernGame {
         }
     }
 
-    private drawGameScreen() {
+    public drawGameScreen() {
         this.clearScreen();
 
         this.writeAt(60,  1, "Wm Walker Software");
@@ -641,14 +531,14 @@ export class CavernGame {
         this.drawStats(false);
     }
 
-    private drawStats(inverse: boolean) {
+    public drawStats(inverse: boolean) {
         this.writeAt(3, 15, "Points =" + this.player.exp.toString().padStart(9), inverse);
         this.writeAt(3, 16, "Arrows =" + this.player.arrows.toString().padStart(9));
         this.writeAt(3, 17, "Gold   =" + this.player.gold.toString().padStart(9));
         this.writeAt(3, 18, this.currentMission.status());
     }
 
-    private drawForestNearPlayer() {
+    public drawForestNearPlayer() {
         //get player location
         // console.log(this.player);
         for (let y = this.player.y + 3; y >= this.player.y -  3; y--) {

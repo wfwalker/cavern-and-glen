@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { Player } from './player';
+import { GameMode, TitleMode, CharacterCreationMode, PlayingMode, MissionEndedMode } from './gamemode'
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -43,7 +44,7 @@ describe('CavernGame Engine - Real Data File Test', () => {
     // Dynamically import inside the test block so it catches the mocks above
     const { CavernGame } = await import('./engine');
     
-    const game = new CavernGame();
+    const game = new CavernGame('gameCanvas');
     expect(game).toBeDefined();
     
     // Allow the async fetch in the constructor to finish processing
@@ -56,17 +57,17 @@ describe('CavernGame Engine - Real Data File Test', () => {
     // Dynamically import inside the test block so it catches the mocks above
     const { CavernGame } = await import('./engine');
     
-    const game = new CavernGame();
+    const game = new CavernGame('gameCanvas');
     expect(game).toBeDefined();
     
     // Allow the async fetch in the constructor to finish processing
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(game.currentMode).toEqual('TITLE');
+    expect(game.getGameMode()).toBeInstanceOf(TitleMode);
     game.player = new Player('bob');
-    game.handleKeys('m');
+    game.getGameMode().handleKey('m');
     expect(game.currentMission).toBeDefined();
-    expect(game.currentMode).toEqual('PLAYING');
+    expect(game.getGameMode()).toBeInstanceOf(PlayingMode);
   });
 
 

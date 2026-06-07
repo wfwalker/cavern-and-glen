@@ -1,5 +1,7 @@
 // player.ts
 
+import { Monster} from './engine';
+
 export class Player {
     // Data Properties
     public name: string;
