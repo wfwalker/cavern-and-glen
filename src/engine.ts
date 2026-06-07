@@ -329,7 +329,7 @@ export class CavernGame {
                 hitSomething = true;
 
                 switch (targetSector.kind) {
-                    case 'monster':
+                    case 'monster': {
                         const bowDamage = 4 + Math.round(this.player.exp / 10); // from CAVERN.PAS
                         targetSector.monster.points -= bowDamage;
 
@@ -341,9 +341,10 @@ export class CavernGame {
                             this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
                         }
                         break;
+                    }
 
                     case 'tree':
-                        this.drawCommandWindowMessage("The arrow is stuck in a tree.");
+                        this.drawCommandWindowMessage("The arrow struck a tree.");
                         break;
 
                     case 'chest':
