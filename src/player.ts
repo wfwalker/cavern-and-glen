@@ -1,6 +1,6 @@
 // player.ts
 
-import { Monster} from './engine';
+import { Item, Monster} from './engine';
 
 export class Player {
     // Data Properties
@@ -10,6 +10,7 @@ export class Player {
     public gold: number;
     public x: number;
     public y: number;
+    public items: Item[];
 
     constructor(name: string) {
         this.name = name;
@@ -18,14 +19,13 @@ export class Player {
         this.gold = 10;
         this.x = 0;
         this.y = 0;
+        this.items = [];
     }
 
     public relativeLocation(dx: number, dy: number): {x: number, y: number} {
-        console.log("delta " + dx + ", " + dy);
-        console.log("where am i " + this.x + ", " + this.y);
         const newX = this.x + dx;
         const newY = this.y + dy;
-        console.log("new " + newX + ", " + newY);
+
         return { x: newX, y: newY };
     }
 
@@ -37,6 +37,10 @@ export class Player {
     public gainExperienceFromMonster(monster: Monster) {
         const gained = monster.worth - Math.round(Math.random() * 3) + 1;
         this.exp += gained;
+    }
+
+    public receiveItem(itemFound: Item): void {
+        this.items.push(itemFound);
     }
 
     public swordDamage(): number {
