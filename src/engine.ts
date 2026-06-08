@@ -322,14 +322,16 @@ export class CavernGame {
 
                 if (targetSector.kind === 'chest') {
                     const goldFound = targetSector.gold || 0;
+                    const itemFound = targetSector.item;
                     this.player.gold += goldFound;
 
                     this.currentMission.grid[targetX][targetY] = freeSector();
 
                     if (goldFound > 0) {
                         this.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
-                    } else {
-                        this.drawCommandWindowMessage("The chest was empty of gold.");
+                    } else if (itemFound)  {
+                        this.drawCommandWindowMessage(`You found ${itemFound.name}.`);
+                        this.player.receiveItem(itemFound);
                     }
 
                     this.drawStats(false);
