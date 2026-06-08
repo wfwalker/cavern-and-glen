@@ -550,24 +550,29 @@ export class CavernGame {
                     switch (thisSector.kind) {
                         // case 'monster': tempRowString += ' X '; break;
                         case 'monster': {
-                            const monsterName = thisSector.monster.name;
-                            tempRowString += ' ' + monsterName[0] + monsterName[1]; break;
+                            if (thisSector.monster.invisible) {
+                                tempRowString += ' \u00B7 ';
+                            } else {
+                                const monsterName = thisSector.monster.name;
+                                tempRowString += ' ' + monsterName[0] + monsterName[1];
+                            }
+                            break;
                         }
                         case 'tree':
                             tempRowString += thisSector.pic; 
                             break;
                         case 'chest':
-                            tempRowString += ' ⌂ ';
+                            tempRowString += ' \u2302 ';
                             break;
                         case 'castle':
                             if (thisSector.me_inside) {
-                                tempRowString += '«\u263A»';
+                                tempRowString += '\u00AB\u263A\u00BB';
                             } else {
-                                tempRowString += '« »';
+                                tempRowString += '\u00AB \u00BB';
                             }
                             break;
                         case 'free':
-                            tempRowString += ' · ';
+                            tempRowString += ' \u00B7 ';
                             break;
                         case 'player':
                             tempRowString += ' \u263B ';
