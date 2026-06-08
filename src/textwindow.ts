@@ -123,7 +123,7 @@ export class TextWindow {
                 break;
         }
 
-        console.log("askDirection returning " + dx + ", " + dy);
+        // console.log("askDirection returning " + dx + ", " + dy);
 
         return { dx, dy };
     }
