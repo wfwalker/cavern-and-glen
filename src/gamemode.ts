@@ -11,7 +11,7 @@ export abstract class GameMode {
 		this.game = inGame;
 	}
 
-	public abstract handleKey(key: string);
+	public abstract handleKey(key: string): void;
 }
 
 export class TitleMode extends GameMode {
@@ -52,7 +52,7 @@ export class CharacterCreationMode extends GameMode {
             
             // Go back to Title screen
             this.game.setGameMode(new TitleMode(this.game));
-            this.game.titlePage();
+            this.game.drawTitlePage();
             return;
         }
 
@@ -118,7 +118,7 @@ export class MissionEndedMode extends GameMode {
 	public handleKey(key: string) {
         if (key === 'enter') {
             this.game.setGameMode(new TitleMode(this.game));
-            this.game.titlePage();
+            this.game.drawTitlePage();
         }
 
         console.log(`game over ${key}`);

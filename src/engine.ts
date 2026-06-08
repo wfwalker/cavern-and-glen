@@ -77,7 +77,7 @@ export class CavernGame {
         this.setupInput();
         this.commandWindow = new TextWindow(this, { x1: 2, y1: 20, x2: 80, y2: 25 });
 
-        this.titlePage();
+        this.drawTitlePage();
         
         // Start web game loop
         requestAnimationFrame((t) => this.gameLoop(t));
@@ -133,7 +133,7 @@ export class CavernGame {
         return this.currentMode;
     }
 
-    public titlePage() {
+    public drawTitlePage() {
         this.clearScreen();
         this.writeAt(29, 5, 'C a v e r n  &  G l e n');
         this.writeAt(29, 8, 'Programmed by Wm Walker');
@@ -450,14 +450,14 @@ export class CavernGame {
         }
     }
 
-    public async directionalQuestion(prompt: string): { dx: number, dy: number } {
+    public async directionalQuestion(prompt: string): Promise<{ dx: number; dy: number; }> {
         // Game pauses right here naturally until the player presses a valid key!
         const { dx, dy } = await this.commandWindow.askDirection(prompt);
 
         // If invalid key was entered, exit out of action selection safely
         if (dx === 999 && dy === 999) {
             this.drawCommandWindowMessage("Action canceled.");
-            return;
+            return { dx: 0, dy: 0 };
         }
 
         return { dx, dy };
