@@ -92,6 +92,22 @@ export class CavernGame {
         }
     }
 
+    public getScreenRow(row, start, end): string {
+        let tmp = '';
+
+        let cursorX = start - 1;
+        const cursorY = row - 1;
+
+        for (let i = 0; i <= (end - start); i++) {
+            if (cursorX >= 0 && cursorX < this.COLS && cursorY >= 0 && cursorY < this.ROWS) {
+                tmp += this.screenBuffer[cursorY][cursorX][0];
+                cursorX++;
+            }
+        }
+
+        return tmp;
+    }
+
     // Direct replacement for Pascal's GotoXY and Write
     public writeAt(x: number, y: number, text: string, inverse: boolean = false) {
         let fgColor = '#33ff33';
