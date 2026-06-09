@@ -149,6 +149,10 @@ export class CavernGame {
         return this.currentMode;
     }
 
+    public playerInCastle(): boolean {
+        return (this.currentMission.grid[this.player.x][this.player.y].kind === 'castle');
+    }
+
     public drawTitlePage() {
         this.clearScreen();
         this.writeAt(29, 5, 'C a v e r n  &  G l e n');
@@ -164,7 +168,8 @@ export class CavernGame {
 
     private setupInput() {
         window.addEventListener('keydown', (e: KeyboardEvent) => {
-            const key = e.key.toLowerCase();
+            const key = e.key;
+            console.log(key);
             
             // Prevent default browser behavior for standard game keys (like spacebar scrolling down)
             if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {

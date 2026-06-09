@@ -40,7 +40,7 @@ export class CharacterCreationMode extends GameMode {
 
 	public handleKey(key: string) {
         // 1. If they hit Enter, save the name and start the mission!
-        if (key === 'enter') {
+        if (key === 'Enter') {
             if (this.playerNameInput.trim().length === 0) {
                 // Don't let them have a blank name
                 this.playerNameInput = "Hero";
@@ -57,7 +57,7 @@ export class CharacterCreationMode extends GameMode {
         }
 
         // 2. Handle Backspace to remove characters
-        if (key === 'backspace') {
+        if (key === 'Backspace') {
             this.playerNameInput = this.playerNameInput.slice(0, -1);
 
 	        const dynamicPromptString = `> ${this.playerNameInput}_`;
@@ -105,6 +105,15 @@ export class PlayingMode extends GameMode {
                 this.game.doOpenChest();
                 break;
             case 'u': /* Use Item */; break;
+            case 'C':
+                if (this.game.playerInCastle()) {
+                    this.game.setGameMode(new CastleMode(this.game));
+                    this.game.drawCommandWindowMessage('Welcome to the Magic Castle');
+                    this.game.drawCommandWindowMessage('a to buy an arrow, m to end your mission, q to return to game');
+                } else {
+                    this.game.drawCommandWindowMessage('Sorry, you are not in a castle');
+                }
+                break;
             case 'h':
                 this.game.displayHelp();
                 break;
@@ -114,9 +123,32 @@ export class PlayingMode extends GameMode {
 	}
 }
 
+export class CastleMode extends GameMode {
+    public handleKey(key: string): void {
+        console.log(`handle Castle command ${key}`);
+        switch(key) {
+            case 'a':
+                if (this.game.player.buyArrows(1)) {
+                    this.game.drawCommandWindowMessage("You bought an arrow");
+                    this.game.drawStats(false);
+                }
+                break;
+            case 'm':
+                if (this.game.currentMission.missionCompleted()) {
+                    this.game.drawCommandWindowMessage("You have completed your mission, congratulations!");
+                    this.game.setGameMode(new MissionEndedMode(this.game));
+                }
+                break;
+            case 'q':
+                this.game.drawCommandWindowMessage("Back to game");
+                this.game.setGameMode(new PlayingMode(this.game));
+        }
+    }
+}
+
 export class MissionEndedMode extends GameMode {
 	public handleKey(key: string) {
-        if (key === 'enter') {
+        if (key === 'Enter') {
             this.game.setGameMode(new TitleMode(this.game));
             this.game.drawTitlePage();
         }
