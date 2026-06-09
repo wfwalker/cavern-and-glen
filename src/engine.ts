@@ -92,7 +92,7 @@ export class CavernGame {
         }
     }
 
-    public getScreenRow(row, start, end): string {
+    public getScreenRow(row: number, start: number, end: number): string {
         let tmp = '';
 
         let cursorX = start - 1;
