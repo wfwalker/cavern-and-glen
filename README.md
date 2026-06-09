@@ -10,9 +10,11 @@ Parity with 1985:
 * [ ] swords with different strengths, wear and breakage
 * [X] classic monster movement
 * [X] monster attacks and damage to player
-* [ ] castle -- buy arrows, exit when mission is done
+* [X] castle -- buy arrows, exit when mission is done
 * [ ] some way to load and save characters
 * [X] invert stats display (low points?)
+* [ ] make sword and bow into subclasses of GameMode along with Use Item mode
+* [ ] only show save character and new mission on title screen if character is not dead
 
 Infrastructure:
 * [ ] better unit tests
@@ -26,3 +28,11 @@ Fun extras:
 * [ ] write up a timeline of Swords and Sorcery on PLATO
 * [ ] can we have one engine drive the 1980's IBM PC game and the orange on black PLATO-themed game?
 * [ ] how to make mobile version?
+
+For further reading:
+
+* https://crpgadventures.blogspot.com/2019/07/game-31-swords-and-sorcery-1978.html
+* https://www.youtube.com/watch?v=FaG3Qlesr-k
+* https://crpgaddict.blogspot.com/2019/02/game-318-swords-and-sorcery-1978.html
+* https://howtomakeanrpg.com/r/l/g/swords-and-sorcery.html
+* https://www.retrogamestrove.com/game-7-swords-sorcery/
