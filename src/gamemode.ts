@@ -96,11 +96,17 @@ export class PlayingMode extends GameMode {
             
             // Action keys
             case 'b':
-                this.game.doBow();
+                if (this.game.player.arrows <= 0) {
+                    this.game.drawCommandWindowMessage("You don't have any arrows!");
+                } else {
+                    this.game.drawCommandWindowMessage("Bow direction?");
+                    this.game.setGameMode(new BowMode(this.game));
+                }
                 break;
             case 's':
-                 this.game.doSword();
-                 break;
+                this.game.drawCommandWindowMessage("Sword direction?");
+                this.game.setGameMode(new SwordMode(this.game));
+                break;
             case 'o':
                 this.game.doOpenChest();
                 break;
@@ -122,6 +128,41 @@ export class PlayingMode extends GameMode {
         this.game.drawForestNearPlayer();
 	}
 }
+
+export class SwordMode extends GameMode {
+    public handleKey(key: string): void {
+        switch (key) {
+            // Movement keys mapping to your original layout
+            case 'q': this.game.doSword(-1,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'w': this.game.doSword( 0,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'e': this.game.doSword( 1,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'a': this.game.doSword(-1,  0); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'd': this.game.doSword( 1,  0); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'z': this.game.doSword(-1, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'x': this.game.doSword( 0, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'c': this.game.doSword( 1, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            default: this.game.drawCommandWindowMessage("Invalid direction key");
+        }      
+    }
+}
+
+export class BowMode extends GameMode {
+    public handleKey(key: string): void {
+        switch (key) {
+            // Movement keys mapping to your original layout
+            case 'q': this.game.doBow(-1,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'w': this.game.doBow( 0,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'e': this.game.doBow( 1,  1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'a': this.game.doBow(-1,  0); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'd': this.game.doBow( 1,  0); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'z': this.game.doBow(-1, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'x': this.game.doBow( 0, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            case 'c': this.game.doBow( 1, -1); this.game.setGameMode(new PlayingMode(this.game)); break;
+            default: this.game.drawCommandWindowMessage("Invalid direction key");
+        }      
+    }
+}
+
 
 export class CastleMode extends GameMode {
     public handleKey(key: string): void {

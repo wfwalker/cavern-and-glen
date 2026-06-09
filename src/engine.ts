@@ -47,17 +47,6 @@ export class CavernGame {
     public monsterList: Monster[] = [];
     public itemList: Item[] = [];
 
-    // A placeholder to store a callback function when a prompt is waiting
-
-    private activePromptResolver: ((key: string) => void) | null = null;   
-
-    /**
-     * Public helper that lets the TextWindow register its temporary listener hook
-     */
-    public registerPromptHook(resolver: (key: string) => void) {
-        this.activePromptResolver = resolver;
-    }     
-
     // Terminal Screen buffer containing [character, color, backgroundColor]
     private screenBuffer: [string, string, string][][] = [];
 
@@ -176,19 +165,6 @@ export class CavernGame {
                 e.preventDefault();
             }
 
-            // 1. INTERCEPTION CHECK: Is a TextWindow prompt currently waiting?
-            if (this.activePromptResolver) {
-                event.preventDefault();
-                
-                // Grab a reference to the resolver, clear it immediately to avoid leaks
-                const resolve = this.activePromptResolver;
-                this.activePromptResolver = null;
-                
-                // Pass the key straight to the waiting Promise!
-                resolve(event.key);
-                return; // Stop execution here! Do NOT run standard gameplay inputs.
-            }
-
             // the GameMode object handles keyboard commands appropriate for the current mode
             this.currentMode.handleKey(key);
         });
@@ -204,8 +180,7 @@ export class CavernGame {
         this.writeAt(25, 5, prompt);
     }
 
-    public async doSword() {
-        const { dx, dy } = await this.directionalQuestion("Sword");
+    public doSword(dx: number, dy: number) {
         console.log("doSword deltas " + dx + ", " + dy);
         const newLoc = this.player.relativeLocation(dx, dy);
         console.log(newLoc);
@@ -263,17 +238,7 @@ export class CavernGame {
         }
     }
 
-    public async doBow() {
-        if (this.player.arrows <= 0) {
-            this.drawCommandWindowMessage("You don't have any arrows!");
-            return;
-        }
-
-        const { dx, dy } = await this.directionalQuestion("Bow");
-        if (dx === 0 && dy === 0) {
-            return;
-        }
-
+    public doBow(dx: number, dy: number) {
         this.player.arrows -= 1;
         this.drawStats(false);
 
@@ -472,20 +437,6 @@ export class CavernGame {
             }
         }
     }
-
-    public async directionalQuestion(prompt: string): Promise<{ dx: number; dy: number; }> {
-        // Game pauses right here naturally until the player presses a valid key!
-        const { dx, dy } = await this.commandWindow.askDirection(prompt);
-
-        // If invalid key was entered, exit out of action selection safely
-        if (dx === 999 && dy === 999) {
-            this.drawCommandWindowMessage("Action canceled.");
-            return { dx: 0, dy: 0 };
-        }
-
-        return { dx, dy };
-    }
-
 
     public displayHelp() {
         this.drawCommandWindowMessage(" q  w  e   │  b ── bow");
