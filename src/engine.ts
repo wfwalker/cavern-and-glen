@@ -134,7 +134,7 @@ export class CavernGame {
     }
 
     public playerInCastle(): boolean {
-        return (this.currentMission.grid[this.player.x][this.player.y].kind === 'castle');
+        return (this.currentMission.getXY(this.player.x, this.player.y).kind === 'castle');
     }
 
     public readyForMission(): boolean {
@@ -191,14 +191,14 @@ export class CavernGame {
         console.log(newLoc);
 
         if (this.currentMission.inForest(newLoc.x, newLoc.y)) {
-            const targetSector = this.currentMission.grid[newLoc.x][newLoc.y];
+            const targetSector = this.currentMission.getXY(newLoc.x, newLoc.y);
             console.log("doSword inForest found");
             console.log(targetSector);
 
             switch(targetSector.kind) {
                 case 'tree':
                     this.drawCommandWindowMessage("You chopped down the tree");
-                    this.currentMission.grid[newLoc.x][newLoc.y] = freeSector();
+                    this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
                     this.drawForestNearPlayer();
                     break;
                 case 'chest':
@@ -220,7 +220,7 @@ export class CavernGame {
                         this.drawStats(false);
 
                         //  clear the grid Sector where the monster was
-                        this.currentMission.grid[newLoc.x][newLoc.y] = freeSector();
+                        this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
                         this.drawForestNearPlayer();
 
                         // TODO: update the currentMission quota and redraw the mission
@@ -252,7 +252,7 @@ export class CavernGame {
         let hitSomething = false;
 
         while (this.currentMission.inForest(curX, curY)) {
-            const targetSector = this.currentMission.grid[curX][curY];
+            const targetSector = this.currentMission.getXY(curX, curY);
 
             if (targetSector.kind !== 'free') {
                 hitSomething = true;
@@ -265,7 +265,7 @@ export class CavernGame {
                         if (targetSector.monster.points < 0) {
                             this.drawCommandWindowMessage("You killed the " + targetSector.monster.name);
                             this.player.gainExperienceFromMonster(targetSector.monster);
-                            this.currentMission.grid[curX][curY] = freeSector();
+                            this.currentMission.setXY(curX, curY, freeSector());
                         } else {
                             this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
                         }
@@ -309,14 +309,14 @@ export class CavernGame {
             const targetY = this.player.y + dy;
 
             if (this.currentMission.inForest(targetX, targetY)) {
-                const targetSector = this.currentMission.grid[targetX][targetY];
+                const targetSector = this.currentMission.getXY(targetX, targetY);
 
                 if (targetSector.kind === 'chest') {
                     const goldFound = targetSector.gold || 0;
                     const itemFound = targetSector.item;
                     this.player.gold += goldFound;
 
-                    this.currentMission.grid[targetX][targetY] = freeSector();
+                    this.currentMission.setXY(targetX, targetY, freeSector());
 
                     if (goldFound > 0) {
                         this.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
@@ -338,7 +338,7 @@ export class CavernGame {
 
     public doMonsters() {
         const playerArmorPoints = 0; // TODO: implement method on Player for this
-        const playerSector = this.currentMission.grid[this.player.x][this.player.y];
+        const playerSector = this.currentMission.getXY(this.player.x, this.player.y);
         const playerInCastle = playerSector.kind === "castle";
 
         for (const { dx, dy } of adjacentSectors) {
@@ -346,7 +346,7 @@ export class CavernGame {
             const targetY = this.player.y + dy;
 
             if (this.currentMission.inForest(targetX, targetY)) {
-                const targetSector = this.currentMission.grid[targetX][targetY];
+                const targetSector = this.currentMission.getXY(targetX, targetY);
 
                 if (targetSector.kind === 'monster') {
                     const attackingMonster = targetSector.monster;
@@ -390,11 +390,11 @@ export class CavernGame {
 
                     console.log(`moving ${coord.x} ${coord.y} to ${newX} ${newY}`);
 
-                    if (this.currentMission.grid[newX][newY].kind === 'free') {
+                    if (this.currentMission.getXY(newX, newY).kind === 'free') {
                         console.log("move this guy");
-                        console.log(this.currentMission.grid[coord.x][coord.y]);
-                        this.currentMission.grid[newX][newY] = structuredClone(this.currentMission.grid[coord.x][coord.y]);
-                        this.currentMission.grid[coord.x][coord.y] = freeSector();
+                        console.log(this.currentMission.getXY(coord.x, coord.y));
+                        this.currentMission.setXY(newX, newY, structuredClone(this.currentMission.getXY(coord.x, coord.y)));
+                        this.currentMission.setXY(coord.x, coord.y, freeSector());
                     }
 
                 }
@@ -408,8 +408,8 @@ export class CavernGame {
         const newY = this.player.y + dy;
 
         if (this.currentMission.inForest(newX, newY)) {
-            const oldSector = this.currentMission.grid[this.player.x][this.player.y];
-            const newSector = this.currentMission.grid[newX][newY];
+            const oldSector = this.currentMission.getXY(this.player.x, this.player.y);
+            const newSector = this.currentMission.getXY(newX, newY);
             switch (newSector.kind) {
                 case 'monster': {
                     const monsterName = newSector.monster.name;
@@ -538,7 +538,7 @@ export class CavernGame {
             for (let x = this.player.x - 3; x <= this.player.x + 3; x++) {
                 // console.log(this.currentMission.forestRows + ", " + this.currentMission.forestCols);
                 if (this.currentMission.inForest(x, y)) {
-                    const thisSector = this.currentMission.grid[x][y];
+                    const thisSector = this.currentMission.getXY(x, y);
                     switch (thisSector.kind) {
                         // case 'monster': tempRowString += ' X '; break;
                         case 'monster': {

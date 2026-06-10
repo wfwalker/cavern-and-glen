@@ -136,10 +136,10 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
     game.player.y = PY;
     for (let dx = -3; dx <= 3; dx++) {
       for (let dy = -3; dy <= 3; dy++) {
-        game.currentMission.grid[PX + dx][PY + dy] = freeSector();
+        game.currentMission.setXY(PX + dx, PY + dy, freeSector());
       }
     }
-    game.currentMission.grid[PX][PY].kind = 'player';
+    game.currentMission.setXY(PX, PY, playerSector());
     return { game, freeSector, playerSector, monsterSector, treeSector, castleSector, chestSector };
   }
 
@@ -154,9 +154,9 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('a visible MonsterSector one step north renders its two-letter abbreviation', async () => {
     const { game, monsterSector } = await makeGameForDraw();
-    game.currentMission.grid[PX][PY + 1] = monsterSector(
+    game.currentMission.setXY(PX, PY + 1, monsterSector(
       { name: 'Dragon', points: 50, worth: 20, invisible: false }
-    );
+    ));
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(0); // same column as player, one row up
@@ -166,9 +166,9 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('an invisible MonsterSector renders the free-space dot, not its name', async () => {
     const { game, monsterSector } = await makeGameForDraw();
-    game.currentMission.grid[PX][PY + 1] = monsterSector(
+    game.currentMission.setXY(PX, PY + 1, monsterSector(
       { name: 'Ghost', points: 10, worth: 5, invisible: true }
-    );
+    ));
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(0);
@@ -178,7 +178,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('a TreeSector renders the spade glyph', async () => {
     const { game, treeSector } = await makeGameForDraw();
-    game.currentMission.grid[PX + 1][PY] = treeSector();
+    game.currentMission.setXY(PX + 1, PY, treeSector());
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(1); // one step east of player
@@ -188,7 +188,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('a ChestSector renders the chest glyph', async () => {
     const { game, chestSector } = await makeGameForDraw();
-    game.currentMission.grid[PX - 1][PY] = chestSector(10, null);
+    game.currentMission.setXY(PX - 1, PY, chestSector(10, null));
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(-1); // one step west of player
@@ -198,7 +198,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('a CastleSector renders the castle glyph', async () => {
     const { game, castleSector } = await makeGameForDraw();
-    game.currentMission.grid[PX][PY - 1] = castleSector();
+    game.currentMission.setXY(PX, PY - 1, castleSector());
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(0);
@@ -208,6 +208,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('an out-of-bounds cell renders the edge marker " + "', async () => {
     const { game } = await makeGameForDraw();
+    const { playerSector } = await import('./mission');
     // Place the player at the north edge so the top row of the viewport
     // (dy=+3) is outside the 40×40 forest.
     game.player.x = PX;
@@ -216,10 +217,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
     game.player.y = 1;
     // Safest: put player at y=0
     game.player.y = 0;
-    game.currentMission.grid[PX][0] = await (async () => {
-      const { playerSector } = await import('./mission');
-      return playerSector();
-    })();
+    game.currentMission.setXY(PX, 0, playerSector());
     game.drawForestNearPlayer();
 
     // dy=+1 from player.y=0 → y=1 is in bounds (fine), but dy=+3 → y=3 is in bounds too.
@@ -228,16 +226,15 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
     // Let's use x edge: player at x=0, dx=-1 → x=-1 (out of bounds).
     game.player.x = 0;
     game.player.y = PY;
-    const { playerSector } = await import('./mission');
     const { freeSector } = await import('./mission');
-    game.currentMission.grid[0][PY].kind = 'player';
+    game.currentMission.setXY(0, PY, playerSector());
     // Fill in-bounds part of the viewport baseline
     for (let dx = 0; dx <= 3; dx++) {
       for (let dy = -3; dy <= 3; dy++) {
-        game.currentMission.grid[dx][PY + dy] = freeSector();
+        game.currentMission.setXY(dx, PY + dy, freeSector());
       }
     }
-    game.currentMission.grid[0][PY].kind = 'player';
+    game.currentMission.setXY(0, PY, playerSector());
     game.drawForestNearPlayer();
 
     // The leftmost three viewport cells (dx=-3,-2,-1) are all out-of-bounds
@@ -312,13 +309,13 @@ describe('CavernGame.movePlayer() - grid updates', () => {
     const PX = 10, PY = 10;
     game.player.x = PX;
     game.player.y = PY;
-    game.currentMission.grid[PX][PY].kind = 'player';
+    game.currentMission.setXY(PX, PY, playerSector());
     return { game, freeSector, playerSector, monsterSector, PX, PY };
   }
 
   it('moving into a free sector: updates player.x and player.y', async () => {
     const { game, freeSector, PX, PY } = await makeGameWithMission();
-    game.currentMission.grid[PX + 1][PY] = freeSector();
+    game.currentMission.setXY(PX + 1, PY, freeSector());
 
     game.movePlayer(1, 0);
 
@@ -328,27 +325,27 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
   it('moving into a free sector: new cell becomes a PlayerSector', async () => {
     const { game, freeSector, playerSector, PX, PY } = await makeGameWithMission();
-    game.currentMission.grid[PX + 1][PY] = freeSector();
+    game.currentMission.setXY(PX + 1, PY, freeSector());
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.grid[PX + 1][PY].kind).toEqual('player');
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toEqual('player');
   });
 
   it('moving into a free sector: old cell becomes a FreeSector', async () => {
     const { game, freeSector, PX, PY } = await makeGameWithMission();
-    game.currentMission.grid[PX + 1][PY] = freeSector();
+    game.currentMission.setXY(PX + 1, PY, freeSector());
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.grid[PX][PY].kind).toEqual('free');
+    expect(game.currentMission.getXY(PX, PY).kind).toEqual('free');
   });
 
   it('moving into a MonsterSector: player coords do not change', async () => {
     const { game, monsterSector, PX, PY } = await makeGameWithMission();
-    game.currentMission.grid[PX + 1][PY] = monsterSector(
+    game.currentMission.setXY(PX + 1, PY, monsterSector(
       { name: 'Goblin', points: 10, worth: 5, invisible: false }
-    );
+    ));
 
     game.movePlayer(1, 0);
 
@@ -358,14 +355,14 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
   it('moving into a MonsterSector: grid cells do not change', async () => {
     const { game, monsterSector, playerSector, PX, PY } = await makeGameWithMission();
-    game.currentMission.grid[PX + 1][PY] = monsterSector(
+    game.currentMission.setXY(PX + 1, PY, monsterSector(
       { name: 'Goblin', points: 10, worth: 5, invisible: false }
-    );
+    ));
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.grid[PX][PY].kind).toEqual('player');
-    expect(game.currentMission.grid[PX + 1][PY].kind).toEqual('monster');
+    expect(game.currentMission.getXY(PX, PY).kind).toEqual('player');
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toEqual('monster');
   });
 
   it('moving out of bounds: player coords do not change', async () => {
@@ -373,7 +370,7 @@ describe('CavernGame.movePlayer() - grid updates', () => {
     // Place player at edge of the forest
     game.player.x = 0;
     game.player.y = 0;
-    game.currentMission.grid[0][0].kind = 'player';
+    game.currentMission.setXY(0, 0, playerSector());
 
     game.movePlayer(-1, 0); // would land at x = -1
 
@@ -385,11 +382,11 @@ describe('CavernGame.movePlayer() - grid updates', () => {
     const { game, playerSector } = await makeGameWithMission();
     game.player.x = 0;
     game.player.y = 0;
-    game.currentMission.grid[0][0].kind = 'player';
+    game.currentMission.setXY(0, 0, playerSector());
 
     game.movePlayer(-1, 0);
 
-    expect(game.currentMission.grid[0][0].kind).toEqual('player');
+    expect(game.currentMission.getXY(0, 0).kind).toEqual('player');
   });
 });
 

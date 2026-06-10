@@ -48,9 +48,12 @@ export function monsterSector(monster: Monster): Sector {
 }
 
 export class Mission {
-    public grid: Sector[][];
-    public objective: MissionObjective;
-    public playerExp: number;
+    private grid: Sector[][];
+    private objective: MissionObjective;
+    private playerExp: number;
+    private castleCount: number;
+    private chestCount: number;
+    private monsterCount: number;
     public readonly forestRows = 40;
     public readonly forestCols = 40;
 
@@ -66,13 +69,21 @@ export class Mission {
 
         this.initializeTrees();
 
-        this.initializeCastles();
+        this.castleCount = this.initializeCastles();
 
-        this.initializeChests(itemList);
+        this.chestCount = this.initializeChests(itemList);
 
         this.putPlayerInForest(thePlayer);
 
-        this.initializeMonsters(monsterList);
+        this.monsterCount = this.initializeMonsters(monsterList);
+    }
+
+    public getXY(x: number, y: number): Sector {
+        return this.grid[x][y];
+    }
+
+    public setXY(x: number, y: number, sector: Sector) {
+        this.grid[x][y] = sector;
     }
 
     public missionCompleted(): boolean {
@@ -157,16 +168,18 @@ export class Mission {
         }
     }
 
-    private initializeCastles() {
+    private initializeCastles(): number {
         // 0.4% castles in the forest!
         const numCastles = Math.round(this.forestRows * this.forestCols * 0.4 / 100);
 
         for (let i = 0; i < numCastles; i++) {
             this.placeOnRandomFreeSector(castleSector());
         }
+
+        return numCastles;
     }
 
-    private initializeChests(itemList: Item[]) {
+    private initializeChests(itemList: Item[]): number {
         const numberOfChests = Math.trunc(this.objective.quota / 2);
  
         for (let i = 0; i < numberOfChests; i++) {
@@ -178,6 +191,8 @@ export class Mission {
                 this.placeOnRandomFreeSector(chestSector(0, randomItem.clone()));
             }
         }
+
+        return numberOfChests;
     }
 
     private putPlayerInForest(thePlayer: Player) {
@@ -191,7 +206,7 @@ export class Mission {
         return foundMonsters[Math.floor(Math.random() * foundMonsters.length)];
     }
 
-    private initializeMonsters(monsterList: Monster[]) {
+    private initializeMonsters(monsterList: Monster[]): number {
         const numberOfMonsters = Math.round(3 * this.objective.quota + 2 * Math.random() * this.objective.quota);
 
         for (let i = 0; i < numberOfMonsters; i++) {
@@ -201,6 +216,8 @@ export class Mission {
                 this.placeOnRandomFreeSector(monsterSector(this.findAppropriateRandomMonster(monsterList)));
             }
         }
+
+        return numberOfMonsters;
     }
 
     // Set up the grid with all cells free.
