@@ -159,9 +159,13 @@ export class UseItemMode extends GameMode {
                 this.game.drawItems();
                 return;
             }
+        } else if (key == 'Escape') {
+            this.game.drawCommandWindowMessage('Back to game');
+            this.game.setGameMode(new PlayingMode(this.game));
+            this.game.drawItems();
+        } else {
+            this.game.drawCommandWindowMessage("Please type a valid item index or ESC");
         }
-
-        this.game.drawCommandWindowMessage("Please type a valid item index");
     }
 }
 

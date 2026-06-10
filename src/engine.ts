@@ -354,13 +354,17 @@ export class CavernGame {
                     if (playerInCastle) {
                         this.drawCommandWindowMessage(`The ${targetSector.monster.name} misses`);
                     } else {
-                        const damage = Math.round(
+                        const rawDamage = Math.round(
                             (attackingMonster.points / 8) +
                             (Math.random() * 3) +
                             (attackingMonster.worth / 4));
-                        this.player.takeDamage(damage - playerArmorPoints);
+
                         this.drawCommandWindowMessage(`The ${targetSector.monster.name} hits`);
-                        this.drawStats(true);
+
+                        if (rawDamage > playerArmorPoints) {
+                            this.player.takeDamage(rawDamage - playerArmorPoints);
+                            this.drawStats(true);
+                        }
 
                         if (this.player.exp <= 0) {
                             this.drawCommandWindowMessage(`You died, ${this.player.name}`);
@@ -526,7 +530,7 @@ export class CavernGame {
         console.log("drawItems loop");
         for (let index = 0; index < this.player.items.length; index++) {
             const anItem: Item = this.player.items[index];
-            this.writeAt(27, index + 1, anItem.displayString());
+            this.writeAt(27, index + 1, `${index + 1} ${anItem.displayString()}`);
         }
     }
 
