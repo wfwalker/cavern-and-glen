@@ -13,8 +13,8 @@ Parity with 1985:
 * [X] castle -- buy arrows, exit when mission is done
 * [ ] some way to load and save characters
 * [X] invert stats display (low points?)
-* [ ] make sword and bow into subclasses of GameMode along with Use Item mode
-* [ ] only show save character and new mission on title screen if character is not dead
+* [X] make sword and bow into subclasses of GameMode along with Use Item mode
+* [X] only show save character and new mission on title screen if character is not dead
 
 Infrastructure:
 * [ ] better unit tests
