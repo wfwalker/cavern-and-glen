@@ -137,16 +137,20 @@ export class CavernGame {
         return (this.currentMission.grid[this.player.x][this.player.y].kind === 'castle');
     }
 
+    public readyForMission(): boolean {
+        return this.player && this.player.readyForMission();
+    }
+
     public drawTitlePage() {
         this.clearScreen();
         this.writeAt(29, 5, 'C a v e r n  &  G l e n');
         this.writeAt(29, 8, 'Programmed by Wm Walker');
         this.writeAt(25, 11, 'Designed by John and Wm Walker');
 
-        if (this.player == null) {
-           this.writeAt(9, 18, 'N|ew Character    L|oad character                       Q|uit');
-        } else {
+        if (this.readyForMission()) {
            this.writeAt(9, 18, 'N|ew Character    L|oad or S|ave character   M|ission   Q|uit');
+        } else {
+           this.writeAt(9, 18, 'N|ew Character    L|oad character                       Q|uit');
         }
     }
 
@@ -522,12 +526,7 @@ export class CavernGame {
         console.log("drawItems loop");
         for (let index = 0; index < this.player.items.length; index++) {
             const anItem: Item = this.player.items[index];
-            console.log(anItem);
-            if (anItem.getInUse()) {
-                this.writeAt(27, index + 1, '* ' + anItem.getName());
-            } else {
-                this.writeAt(27, index + 1, '  ' + anItem.getName());
-            }
+            this.writeAt(27, index + 1, anItem.displayString());
         }
     }
 

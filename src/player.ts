@@ -23,6 +23,10 @@ export class Player {
         this.items = [];
     }
 
+    public readyForMission(): boolean {
+        return this.exp > 0;
+    }
+
     public relativeLocation(dx: number, dy: number): {x: number, y: number} {
         const newX = this.x + dx;
         const newY = this.y + dy;

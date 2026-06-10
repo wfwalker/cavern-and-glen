@@ -16,15 +16,20 @@ export abstract class GameMode {
 
 export class TitleMode extends GameMode {
 	public handleKey(key: string) {
-        if (key === 'n') {
-            this.game.setGameMode(new CharacterCreationMode(this.game));
-            this.game.displayCharacterCreationScreen('');
-        } else if (key === 'm') {
-            this.game.setGameMode(new PlayingMode(this.game));
-            this.game.currentMission = new Mission(this.game.player, this.game.monsterList, this.game.itemList); //ENVY
+        switch (key) {
+            case 'n':
+                this.game.setGameMode(new CharacterCreationMode(this.game));
+                this.game.displayCharacterCreationScreen('');
+                break;
+            case 'm':
+                if (this.game.readyForMission()) {
+                    this.game.setGameMode(new PlayingMode(this.game));
+                    this.game.currentMission = new Mission(this.game.player, this.game.monsterList, this.game.itemList); //ENVY
 
-            this.game.drawGameScreen();
-            this.game.drawStats(false);
+                    this.game.drawGameScreen();
+                    this.game.drawStats(false);
+                }
+                break;
         }
 	}
 }
