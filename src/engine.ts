@@ -337,7 +337,7 @@ export class CavernGame {
     }
 
     public doMonsters() {
-        const playerArmorPoints = 0; // TODO: implement method on Player for this
+        const playerArmorPoints = this.player.getArmorPoints(); // TODO: implement method on Player for this
         const playerSector = this.currentMission.getXY(this.player.x, this.player.y);
         const playerInCastle = playerSector.kind === "castle";
 

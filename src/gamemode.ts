@@ -1,5 +1,6 @@
 // gamemode.ts
 
+import { test } from 'vitest';
 import { CavernGame } from './engine';
 import { Mission } from './mission';
 import { Player } from './player';
@@ -20,6 +21,14 @@ export class TitleMode extends GameMode {
             case 'n':
                 this.game.setGameMode(new CharacterCreationMode(this.game));
                 this.game.displayCharacterCreationScreen('');
+                break;
+            case 'l':
+                const testPlayer = new Player('testGuy');
+                testPlayer.receiveItem(this.game.itemList[0].clone());
+                testPlayer.receiveItem(this.game.itemList[1].clone());
+                testPlayer.receiveItem(this.game.itemList[2].clone());
+                this.game.player = testPlayer;
+                this.game.drawTitlePage();
                 break;
             case 'm':
                 if (this.game.readyForMission()) {
@@ -116,6 +125,7 @@ export class PlayingMode extends GameMode {
                 this.game.doOpenChest();
                 break;
             case 'u':
+                this.game.drawCommandWindowMessage("Which item?");
                 this.game.setGameMode(new UseItemMode(this.game));
                 break;
             case 'C':
@@ -143,8 +153,8 @@ export class UseItemMode extends GameMode {
 
         if (key.trim() !== '' && !isNaN(Number(key)) && isFinite(Number(key))) {
             const index = Number(key);
-            if (index < playerItemCount) {
-                this.game.doUseItem(playerItems[index]);
+            if (index <= playerItemCount) {
+                this.game.doUseItem(playerItems[index - 1]);
                 this.game.setGameMode(new PlayingMode(this.game));
                 this.game.drawItems();
                 return;

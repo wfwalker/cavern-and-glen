@@ -1,7 +1,7 @@
 // player.ts
 
 import { Monster} from './engine';
-import { Item } from './item';
+import { Item, Armor } from './item';
 
 export class Player {
     // Data Properties
@@ -46,6 +46,18 @@ export class Player {
 
     public receiveItem(itemFound: Item): void {
         this.items.push(itemFound);
+    }
+
+    public getArmorPoints(): number {
+        const myArmorItems: Armor[] = this.items.filter((item): item is Armor => item instanceof Armor);
+
+        const totalArmorPoints = myArmorItems.reduce((accumulator, armorItem) => {
+          return accumulator + armorItem.getInUsePoints();
+        }, 0); // Always provide 0 as the initial value
+
+        console.log(`player has ${totalArmorPoints} armor points`);
+
+        return totalArmorPoints;
     }
 
     public swordDamage(): number {

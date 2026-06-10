@@ -45,6 +45,14 @@ export class Armor extends Item {
 		this.points = points;
 	}
 
+	public getInUsePoints(): number {
+		if (this.inUse) {
+			return this.points;
+		} else {
+			return 0;
+		}
+	}
+
 	public clone(): Armor {
 		const copy = new Armor(this.name, this.points);
 		copy.inUse = this.inUse;
