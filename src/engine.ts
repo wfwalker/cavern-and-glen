@@ -1,7 +1,8 @@
 // engine.ts
 
+import { Item, buildItemListFromJSON } from './item';
 import { Player } from './player';
-import { GameMode, TitleMode, CharacterCreationMode, PlayingMode, MissionEndedMode } from './gamemode'
+import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission, freeSector, playerSector, castleSector } from './mission';
 import { TextWindow } from './textwindow';
 
@@ -11,12 +12,6 @@ export interface Monster {
     worth: number;
     invisible: boolean;
 }
-
-export type Item =
-    | { kind: 'armor'; name: string; points: number }
-    | { kind: 'sword'; name: string; strength: number }
-    | { kind: 'other'; name: string; power: number }
-
 
 export const adjacentSectors = [
     { dx: -1, dy: -1 }, { dx: -1, dy: 0 }, { dx: -1, dy: 1 },
@@ -180,6 +175,12 @@ export class CavernGame {
         this.writeAt(25, 5, prompt);
     }
 
+    public doUseItem(item: Item): void {
+        item.toggleInUse();
+        this.drawCommandWindowMessage(`toggle usage of ${item.getName()}`);
+    }
+
+
     public doSword(dx: number, dy: number) {
         console.log("doSword deltas " + dx + ", " + dy);
         const newLoc = this.player.relativeLocation(dx, dy);
@@ -316,8 +317,9 @@ export class CavernGame {
                     if (goldFound > 0) {
                         this.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
                     } else if (itemFound)  {
-                        this.drawCommandWindowMessage(`You found ${itemFound.name}.`);
+                        this.drawCommandWindowMessage(`You found ${itemFound.getName()}.`);
                         this.player.receiveItem(itemFound);
+                        this.drawItems();
                     }
 
                     this.drawStats(false);
@@ -503,6 +505,7 @@ export class CavernGame {
 
         this.drawForestNearPlayer();  
         this.drawStats(false);
+        this.drawItems();
     }
 
     public drawStats(inverse: boolean) {
@@ -510,6 +513,22 @@ export class CavernGame {
         this.writeAt(3, 16, "Arrows =" + this.player.arrows.toString().padStart(9));
         this.writeAt(3, 17, "Gold   =" + this.player.gold.toString().padStart(9));
         this.writeAt(3, 18, this.currentMission.status());
+    }
+
+    public drawItems(): void {
+        for (let i = 1; i <= 18; i++) {
+            this.writeAt(27, i, '                       ');
+        }
+        console.log("drawItems loop");
+        for (let index = 0; index < this.player.items.length; index++) {
+            const anItem: Item = this.player.items[index];
+            console.log(anItem);
+            if (anItem.getInUse()) {
+                this.writeAt(27, index + 1, '* ' + anItem.getName());
+            } else {
+                this.writeAt(27, index + 1, '  ' + anItem.getName());
+            }
+        }
     }
 
     public drawForestNearPlayer() {
@@ -570,8 +589,8 @@ export class CavernGame {
     private async loadItemList() {
         const response = await fetch('./items.json');
         const items = await response.json();
-        console.log(items);
-        this.itemList = items.itemList;
+        this.itemList = buildItemListFromJSON(items.itemList);
+        console.log(this.itemList);
     }
 
     private gameLoop(timestamp: number) {

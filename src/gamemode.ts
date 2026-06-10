@@ -110,7 +110,9 @@ export class PlayingMode extends GameMode {
             case 'o':
                 this.game.doOpenChest();
                 break;
-            case 'u': /* Use Item */; break;
+            case 'u':
+                this.game.setGameMode(new UseItemMode(this.game));
+                break;
             case 'C':
                 if (this.game.playerInCastle()) {
                     this.game.setGameMode(new CastleMode(this.game));
@@ -127,6 +129,25 @@ export class PlayingMode extends GameMode {
         this.game.doMonsters();
         this.game.drawForestNearPlayer();
 	}
+}
+
+export class UseItemMode extends GameMode {
+    public handleKey(key: string): void {
+        const playerItems = this.game.player.items;
+        const playerItemCount = playerItems.length;
+
+        if (key.trim() !== '' && !isNaN(Number(key)) && isFinite(Number(key))) {
+            const index = Number(key);
+            if (index < playerItemCount) {
+                this.game.doUseItem(playerItems[index]);
+                this.game.setGameMode(new PlayingMode(this.game));
+                this.game.drawItems();
+                return;
+            }
+        }
+
+        this.game.drawCommandWindowMessage("Please type a valid item index");
+    }
 }
 
 export class SwordMode extends GameMode {

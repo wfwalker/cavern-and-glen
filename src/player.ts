@@ -1,6 +1,7 @@
 // player.ts
 
-import { Item, Monster} from './engine';
+import { Monster} from './engine';
+import { Item } from './item';
 
 export class Player {
     // Data Properties

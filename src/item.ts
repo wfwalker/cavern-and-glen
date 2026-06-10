@@ -83,10 +83,10 @@ export class Other extends Item {
 }
 
 export function buildItemListFromJSON(list: JSONItem[]): Item[] {
-	let itemList:Item[] = [];
+	const itemList:Item[] = [];
 
-	for (let index in list) {
-		let entry = list[index];
+	for (const index in list) {
+		const entry = list[index];
 		let entryItem: Item | undefined;
 
 		switch (entry.kind) {

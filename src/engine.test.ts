@@ -1,9 +1,20 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { Player } from './player';
-import { GameMode, TitleMode, CharacterCreationMode, PlayingMode, MissionEndedMode } from './gamemode'
+import { TitleMode, PlayingMode } from './gamemode'
+import { Armor } from './item'; 
+
 import fs from 'node:fs';
 import path from 'node:path';
-import { freeSector, monsterSector, treeSector } from './mission';
+
+describe('engine test import', () => {
+  it('should import Items correctly', async () => {
+    const myArmor: Armor = new Armor('Test Helmet', 5);
+    expect(myArmor).toBeInstanceOf(Armor);
+    expect(myArmor.getInUse()).toEqual(false);
+    expect(myArmor.getName()).toEqual('Test Helmet');
+    expect(myArmor.displayString()).toEqual('  Test Helmet');
+  })
+});
 
 describe('CavernGame Engine - Real Data File Test', () => {
   let mockCanvas: HTMLCanvasElement;

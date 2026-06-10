@@ -1,7 +1,8 @@
 // mission.ts
 
 import { Player } from './player';
-import { Monster, Item } from './engine';
+import { Monster } from './engine';
+import { Item } from './item';
 
 export interface MissionObjective {
     targetMonster: Monster; // must be an entry from the game monsterList
@@ -174,7 +175,7 @@ export class Mission {
                 this.placeOnRandomFreeSector(chestSector(goldAmount));
             } else {
                 const randomItem = itemList[Math.floor(Math.random() * itemList.length)];
-                this.placeOnRandomFreeSector(chestSector(0, structuredClone(randomItem)));
+                this.placeOnRandomFreeSector(chestSector(0, randomItem.clone()));
             }
         }
     }

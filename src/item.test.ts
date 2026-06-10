@@ -13,7 +13,7 @@ describe('Item Base and Subclasses', () => {
 
   it('should toggle the inUse state and update displayString formatting', () => {
     const sword = new Sword('Excalibur', 99);
-    
+
     // Test initial false state formatting
     expect(sword.displayString()).toBe('  Excalibur');
     

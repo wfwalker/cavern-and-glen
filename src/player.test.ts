@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Player } from './player';
+import { Armor } from './item'; 
 
 describe('Player Class', () => {
     it('should correctly calculate a relative location based on deltas', () => {
@@ -25,5 +26,13 @@ describe('Player Class', () => {
 
         const negativeMove = player.relativeLocation(-2, -2);
         expect(negativeMove).toEqual({ x: 3, y: 3 });
+    });
+
+    it('should receive and store Items', () => {
+        const anArmor: Armor = new Armor('Test Gauntlets', 3);
+        const player = new Player("test guy 3");
+        player.receiveItem(anArmor);
+        expect(player.items[0]).toBeInstanceOf(Armor);
+        expect(player.items.length).toEqual(1);
     });
 });
