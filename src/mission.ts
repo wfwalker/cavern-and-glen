@@ -12,7 +12,7 @@ export interface MissionObjective {
 
 export type Flavor = 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'me';
 
-// Discriminated Union for Sect record
+// Discriminated Union for Sector record
 export type Sector =
     | { kind: 'free'; trap: boolean }
     | { kind: 'tree'; pic: string }
@@ -66,16 +66,13 @@ export class Mission {
         console.log(this.objective);
 
         this.initializeEmptyGrid();
-
         this.initializeTrees();
 
         this.castleCount = this.initializeCastles();
-
         this.chestCount = this.initializeChests(itemList);
+        this.monsterCount = this.initializeMonsters(monsterList);
 
         this.putPlayerInForest(thePlayer);
-
-        this.monsterCount = this.initializeMonsters(monsterList);
     }
 
     public getXY(x: number, y: number): Sector {

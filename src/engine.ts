@@ -223,7 +223,6 @@ export class CavernGame {
                         this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
                         this.drawForestNearPlayer();
 
-                        // TODO: update the currentMission quota and redraw the mission
                         if (this.currentMission.objective.targetMonster.name === targetSector.monster.name)
                         {
                             this.currentMission.decrementTargetMonsterQuota();
