@@ -18,4 +18,20 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+  {
+    // Add your custom rule block as an object in the array
+    rules: {
+      '@typescript-eslint/no-restricted-types': [
+        'error',
+        {
+          types: {
+            'structuredClone': {
+              message: 'Do not use global structuredClone on objects with methods. It strips prototype chains! Use custom .clone() instead.',
+              suggest: ['clone']
+            }
+          }
+        }
+      ]
+    }
+  }  
 );
