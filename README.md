@@ -12,6 +12,7 @@ Parity with 1985:
 * [X] monster attacks and damage to player
 * [X] castle -- buy arrows, exit when mission is done
 * [ ] some way to load and save characters
+* [ ] implement magic items -- split out the player item collection into three subfolders?
 * [X] invert stats display (low points?)
 * [X] make sword and bow into subclasses of GameMode along with Use Item mode
 * [X] only show save character and new mission on title screen if character is not dead
