@@ -48,7 +48,7 @@ export class TextWindow {
             // pull up the next line, char by char
             for (let absX = this.bounds.x1; absX <= this.bounds.x2; absX++) {
                 const sourceCell = this.game.screenBuffer[nextAbsY - 1][absX - 1]; 
-                this.game.writeAt(absX, currentAbsY, sourceCell); // TODO this looks wrong!!
+                this.game.screenBuffer[currentAbsY - 1][absX - 1] = [...sourceCell];
             }
         }
 

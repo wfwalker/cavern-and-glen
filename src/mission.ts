@@ -49,7 +49,7 @@ export function monsterSector(monster: Monster): Sector {
 
 export class Mission {
     private grid: Sector[][];
-    private objective: MissionObjective;
+    public objective: MissionObjective;
     private playerExp: number;
     private castleCount: number;
     private chestCount: number;
@@ -149,6 +149,9 @@ export class Mission {
 
     private placeOnRandomFreeSector(something: Sector): { x: number, y: number } {
         const targetCoordinate = this.findRandomFreeCoordinate();
+        if (!targetCoordinate) {
+            throw new Error("No free coordinates left on grid");
+        }
         const { x, y } = targetCoordinate;
 
         this.place(x, y, something);
@@ -233,7 +236,9 @@ export class Mission {
     // Determine what the player needs to kill based on level
     private determineObjective(monsterList: Monster[]): MissionObjective {
         // our target monster is the first one with more points than the player has experience
-        const foundMonster = monsterList.find(monster => monster.points > this.playerExp);
+        const foundMonster = monsterList.find(monster => monster.points > this.playerExp)
+            || monsterList[monsterList.length - 1]
+            || { name: 'Slime', points: 10, worth: 5, invisible: false };
 
         return {
             targetMonster: foundMonster,

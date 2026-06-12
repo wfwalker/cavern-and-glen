@@ -108,7 +108,7 @@ export function buildItemListFromJSON(list: JSONItem[]): Item[] {
 				entryItem = new Other(entry.name, entry.power);
 				break;
 			default:
-				console.log(`UNKNOWN ITEM TYPE ${entry.kind}`);
+				console.log(`UNKNOWN ITEM TYPE ${(entry as any).kind}`);
 				break;
 		}
 		if (entryItem) {

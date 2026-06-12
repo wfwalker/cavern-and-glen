@@ -188,7 +188,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('a ChestSector renders the chest glyph', async () => {
     const { game, chestSector } = await makeGameForDraw();
-    game.currentMission.setXY(PX - 1, PY, chestSector(10, null));
+    game.currentMission.setXY(PX - 1, PY, chestSector(10, undefined));
     game.drawForestNearPlayer();
 
     const { start, end } = viewportCol(-1); // one step west of player

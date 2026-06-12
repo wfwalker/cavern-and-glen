@@ -36,14 +36,14 @@ export class CavernGame {
     private commandWindow: TextWindow;
 
     // the current player of this game
-    public player: Player;
-    public currentMission: Mission;
+    public player!: Player;
+    public currentMission!: Mission;
 
     public monsterList: Monster[] = [];
     public itemList: Item[] = [];
 
     // Terminal Screen buffer containing [character, color, backgroundColor]
-    private screenBuffer: [string, string, string][][] = [];
+    public screenBuffer: [string, string, string][][] = [];
 
     constructor(canvasId: string) {
         this.loadMonsterList();
@@ -52,7 +52,7 @@ export class CavernGame {
         this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         this.ctx = this.canvas.getContext('2d')!;
 
-        this.player = null;
+        this.player = null as any;
         
         this.canvas.width = this.COLS * this.CHAR_WIDTH;
         this.canvas.height = this.ROWS * this.CHAR_HEIGHT;
