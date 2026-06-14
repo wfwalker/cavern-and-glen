@@ -5,6 +5,8 @@ import { Player } from './player';
 import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission, freeSector, playerSector, castleSector } from './mission';
 import { TextWindow } from './textwindow';
+import { ScreenBuffer } from './screenbuffer';
+
 
 export interface Monster {
     name: string;
@@ -42,8 +44,8 @@ export class CavernGame {
     public monsterList: Monster[] = [];
     public itemList: Item[] = [];
 
-    // Terminal Screen buffer containing [character, color, backgroundColor]
-    private screenBuffer: [string, string, string][][] = [];
+    // Terminal Screen buffer manager
+    private screenBuffer: ScreenBuffer;
 
     constructor(canvasId: string) {
         this.loadMonsterList();
@@ -57,9 +59,9 @@ export class CavernGame {
         this.canvas.width = this.COLS * this.CHAR_WIDTH;
         this.canvas.height = this.ROWS * this.CHAR_HEIGHT;
 
-        this.initBuffer();
+        this.screenBuffer = new ScreenBuffer(this.COLS, this.ROWS);
         this.setupInput();
-        this.commandWindow = new TextWindow(this, { x1: 2, y1: 20, x2: 80, y2: 25 });
+        this.commandWindow = new TextWindow(this.screenBuffer, { x1: 2, y1: 20, x2: 80, y2: 25 });
 
         this.drawTitlePage();
         
@@ -67,66 +69,17 @@ export class CavernGame {
         requestAnimationFrame((t) => this.gameLoop(t));
     }
 
-    private initBuffer() {
-        for (let y = 0; y < this.ROWS; y++) {
-            this.screenBuffer[y] = [];
-            for (let x = 0; x < this.COLS; x++) {
-                this.screenBuffer[y][x] = [' ', '#33ff33', '#000000']; // default gray on black
-            }
-        }
-    }
-
     public getScreenRow(row: number, start: number, end: number): string {
-        let tmp = '';
-
-        let cursorX = start - 1;
-        const cursorY = row - 1;
-
-        for (let i = 0; i <= (end - start); i++) {
-            if (cursorX >= 0 && cursorX < this.COLS && cursorY >= 0 && cursorY < this.ROWS) {
-                tmp += this.screenBuffer[cursorY][cursorX][0];
-                cursorX++;
-            }
-        }
-
-        return tmp;
+        return this.screenBuffer.getScreenRow(row, start, end);
     }
 
     // Direct replacement for Pascal's GotoXY and Write
     public writeAt(x: number, y: number, text: string, inverse: boolean = false) {
-        let fgColor = '#33ff33';
-        let bgColor = '#000000';
-
-        if (inverse) {
-            bgColor = '#33ff33'; fgColor = '#000000';
-        }
-
-        // Adjusting Pascal's 1-based indexing safely to 0-based indexing
-        let cursorX = x - 1;
-        const cursorY = y - 1;
-
-        for (let i = 0; i < text.length; i++) {
-            if (cursorX >= 0 && cursorX < this.COLS && cursorY >= 0 && cursorY < this.ROWS) {
-                this.screenBuffer[cursorY][cursorX] = [text[i], fgColor, bgColor];
-                cursorX++;
-            }
-        }
+        this.screenBuffer.writeAt(x, y, text, inverse);
     }
 
-    public pullUp(x1: number, x2: number, currentAbsY: number, nextAbsY: number) {
-        // pull up the next line, char by char
-        for (let absX = x1; absX <= x2; absX++) {
-            const sourceCell = this.screenBuffer[nextAbsY - 1][absX - 1]; 
-            this.screenBuffer[currentAbsY - 1][absX - 1] = [...sourceCell];
-        }
-    }    
-
     public clearScreen(bgColor = '#000000') {
-        for (let y = 0; y < this.ROWS; y++) {
-            for (let x = 0; x < this.COLS; x++) {
-                this.screenBuffer[y][x] = [' ', '#A8A8A8', bgColor];
-            }
-        }
+        this.screenBuffer.clear(bgColor);
     }
 
     public drawCommandWindowMessage(message: string) {
@@ -472,7 +425,7 @@ export class CavernGame {
 
         for (let y = 0; y < this.ROWS; y++) {
             for (let x = 0; x < this.COLS; x++) {
-                const [char, color, bgColor] = this.screenBuffer[y][x];
+                const [char, color, bgColor] = this.screenBuffer.getCell(x, y);
                 const posX = x * this.CHAR_WIDTH;
                 const posY = y * this.CHAR_HEIGHT;
 

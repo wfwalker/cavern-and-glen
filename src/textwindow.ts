@@ -1,4 +1,4 @@
-import { CavernGame } from './engine';
+import { ScreenBuffer } from './screenbuffer';
 
 export interface WindowBounds {
     x1: number; // 1-based Turbo Pascal style column
@@ -8,14 +8,14 @@ export interface WindowBounds {
 }
 
 export class TextWindow {
-    private game: CavernGame;
+    private screenBuffer: ScreenBuffer;
     private bounds: WindowBounds;
     
     public cursorX: number = 1;
     public cursorY: number = 1;
 
-    constructor(game: CavernGame, bounds: WindowBounds) {
-        this.game = game;
+    constructor(screenBuffer: ScreenBuffer, bounds: WindowBounds) {
+        this.screenBuffer = screenBuffer;
         this.bounds = bounds;
     }
 
@@ -29,7 +29,7 @@ export class TextWindow {
         for (let y = this.bounds.y1; y <= this.bounds.y2; y++) {
             // Fill the row with empty spaces using your native engine method
             const spaces = ' '.repeat(this.width);
-            this.game.writeAt(this.bounds.x1, y, spaces);
+            this.screenBuffer.writeAt(this.bounds.x1, y, spaces);
         }
         this.cursorX = 1;
         this.cursorY = 1;
@@ -45,13 +45,13 @@ export class TextWindow {
             const currentAbsY = this.bounds.y1 + (relativeY - 1);
             const nextAbsY = currentAbsY + 1;
 
-            this.game.pullUp(this.bounds.x1, this.bounds.x2, currentAbsY, nextAbsY);
+            this.screenBuffer.pullUp(this.bounds.x1, this.bounds.x2, currentAbsY, nextAbsY);
         }
 
         // 3. Wipe clean the newly vacated bottom row line 
         const bottomAbsY = this.bounds.y2;
         const blankSpaceLine = ' '.repeat(this.width);
-        this.game.writeAt(this.bounds.x1, bottomAbsY, blankSpaceLine);
+        this.screenBuffer.writeAt(this.bounds.x1, bottomAbsY, blankSpaceLine);
     }
 
     /**
@@ -68,7 +68,7 @@ export class TextWindow {
         const absoluteX = this.bounds.x1 + (this.cursorX - 1);
         const absoluteY = this.bounds.y1 + (this.cursorY - 1);
 
-        this.game.writeAt(absoluteX, absoluteY, printable);
+        this.screenBuffer.writeAt(absoluteX, absoluteY, printable);
 
         this.cursorX = 1;
         this.cursorY++;
