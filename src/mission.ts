@@ -49,7 +49,7 @@ export function monsterSector(monster: Monster): Sector {
 
 export class Mission {
     private grid: Sector[][];
-    public objective: MissionObjective;
+    private objective: MissionObjective;
     private playerExp: number;
     private castleCount: number;
     private chestCount: number;
@@ -89,6 +89,10 @@ export class Mission {
 
     public inForest(x: number, y: number): boolean {
         return ((x >= 0) && (x < this.forestRows) && (y >= 0) && (y < this.forestCols));
+    }
+
+    public objectiveMonsterName(): string {
+        return this.objective.targetMonster.name;
     }
 
     public decrementTargetMonsterQuota() {
@@ -236,9 +240,11 @@ export class Mission {
     // Determine what the player needs to kill based on level
     private determineObjective(monsterList: Monster[]): MissionObjective {
         // our target monster is the first one with more points than the player has experience
-        const foundMonster = monsterList.find(monster => monster.points > this.playerExp)
-            || monsterList[monsterList.length - 1]
-            || { name: 'Slime', points: 10, worth: 5, invisible: false };
+        const foundMonster = monsterList.find(monster => monster.points > this.playerExp);
+
+        if (foundMonster == undefined) {
+            throw new Error("cannot find appropriate target monster");
+        }
 
         return {
             targetMonster: foundMonster,

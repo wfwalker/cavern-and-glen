@@ -45,11 +45,7 @@ export class TextWindow {
             const currentAbsY = this.bounds.y1 + (relativeY - 1);
             const nextAbsY = currentAbsY + 1;
 
-            // pull up the next line, char by char
-            for (let absX = this.bounds.x1; absX <= this.bounds.x2; absX++) {
-                const sourceCell = this.game.screenBuffer[nextAbsY - 1][absX - 1]; 
-                this.game.screenBuffer[currentAbsY - 1][absX - 1] = [...sourceCell];
-            }
+            this.game.pullUp(this.bounds.x1, this.bounds.x2, currentAbsY, nextAbsY);
         }
 
         // 3. Wipe clean the newly vacated bottom row line 

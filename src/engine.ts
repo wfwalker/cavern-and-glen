@@ -43,7 +43,7 @@ export class CavernGame {
     public itemList: Item[] = [];
 
     // Terminal Screen buffer containing [character, color, backgroundColor]
-    public screenBuffer: [string, string, string][][] = [];
+    private screenBuffer: [string, string, string][][] = [];
 
     constructor(canvasId: string) {
         this.loadMonsterList();
@@ -112,6 +112,14 @@ export class CavernGame {
             }
         }
     }
+
+    public pullUp(x1: number, x2: number, currentAbsY: number, nextAbsY: number) {
+        // pull up the next line, char by char
+        for (let absX = x1; absX <= x2; absX++) {
+            const sourceCell = this.screenBuffer[nextAbsY - 1][absX - 1]; 
+            this.screenBuffer[currentAbsY - 1][absX - 1] = [...sourceCell];
+        }
+    }    
 
     public clearScreen(bgColor = '#000000') {
         for (let y = 0; y < this.ROWS; y++) {
@@ -223,7 +231,7 @@ export class CavernGame {
                         this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
                         this.drawForestNearPlayer();
 
-                        if (this.currentMission.objective.targetMonster.name === targetSector.monster.name)
+                        if (this.currentMission.objectiveMonsterName() === targetSector.monster.name)
                         {
                             this.currentMission.decrementTargetMonsterQuota();
                             this.drawStats(false);
