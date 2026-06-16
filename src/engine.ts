@@ -3,9 +3,10 @@
 import { Item, buildItemListFromJSON } from './item';
 import { Player } from './player';
 import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
-import { Mission, freeSector, playerSector, castleSector, monsterSector } from './mission';
+import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
+import { freeSector, playerSector, castleSector, monsterSector } from './sector';
 
 
 export interface Monster {

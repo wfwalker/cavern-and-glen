@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { Player } from './player';
 import { TitleMode, PlayingMode } from './gamemode'
 import { Armor } from './item'; 
+import { freeSector, playerSector, castleSector, monsterSector } from './sector';
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -125,7 +126,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
   async function makeGameForDraw() {
     const { CavernGame } = await import('./engine');
     const { freeSector, playerSector, monsterSector, treeSector, castleSector, chestSector } =
-      await import('./mission');
+      await import('./sector');
     const game = new CavernGame('gameCanvas');
     await new Promise((resolve) => setTimeout(resolve, 0));
     game.player = new Player('tester');
@@ -208,7 +209,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
 
   it('an out-of-bounds cell renders the edge marker " + "', async () => {
     const { game } = await makeGameForDraw();
-    const { playerSector } = await import('./mission');
+    const { playerSector } = await import('./sector');
     // Place the player at the north edge so the top row of the viewport
     // (dy=+3) is outside the 40×40 forest.
     game.player.x = PX;
@@ -226,7 +227,7 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
     // Let's use x edge: player at x=0, dx=-1 → x=-1 (out of bounds).
     game.player.x = 0;
     game.player.y = PY;
-    const { freeSector } = await import('./mission');
+    const { freeSector } = await import('./sector');
     game.currentMission.setXY(0, PY, playerSector());
     // Fill in-bounds part of the viewport baseline
     for (let dx = 0; dx <= 3; dx++) {
@@ -298,7 +299,7 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
   async function makeGameWithMission() {
     const { CavernGame } = await import('./engine');
-    const { freeSector, playerSector, monsterSector } = await import('./mission');
+    const { freeSector, playerSector, monsterSector } = await import('./sector');
     const game = new CavernGame('gameCanvas');
     // Wait for async fetch (monster/item lists) to resolve
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -397,7 +398,7 @@ function makeGameWithCombatMission() {
   return async () => {
     const { CavernGame } = await import('./engine');
     const { freeSector, playerSector, monsterSector, treeSector, chestSector, castleSector } =
-      await import('./mission');
+      await import('./sector');
     const game = new CavernGame('gameCanvas');
     await new Promise((resolve) => setTimeout(resolve, 0));
     game.player = new Player('tester');
@@ -526,7 +527,7 @@ describe('CavernGame.doBow()', () => {
     const arrowsBefore = game.player.arrows;
     // Clear east corridor so arrow flies off the edge
     for (let dx = 1; dx <= 3; dx++) {
-      game.currentMission.setXY(PX + dx, PY, (await import('./mission')).freeSector());
+      game.currentMission.setXY(PX + dx, PY, (await import('./sector')).freeSector());
     }
 
     game.doBow(1, 0);
