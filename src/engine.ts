@@ -3,7 +3,7 @@
 import { Item, buildItemListFromJSON } from './item';
 import { Player } from './player';
 import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
-import { Mission, freeSector, playerSector, castleSector } from './mission';
+import { Mission, freeSector, playerSector, castleSector, monsterSector } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
 
@@ -356,8 +356,11 @@ export class CavernGame {
 
                     if (this.currentMission.getXY(newX, newY).kind === 'free') {
                         console.log("move this guy");
-                        console.log(this.currentMission.getXY(coord.x, coord.y));
-                        this.currentMission.setXY(newX, newY, structuredClone(this.currentMission.getXY(coord.x, coord.y)));
+                        const sectorToMove = this.currentMission.getXY(coord.x, coord.y);
+                        console.log(sectorToMove);
+                        if (sectorToMove.kind === 'monster') {
+                            this.currentMission.setXY(newX, newY, monsterSector(sectorToMove.monster));
+                        }
                         this.currentMission.setXY(coord.x, coord.y, freeSector());
                     }
 
