@@ -390,3 +390,289 @@ describe('CavernGame.movePlayer() - grid updates', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Shared helper for doSword / doBow / doOpenChest suites
+// ---------------------------------------------------------------------------
+function makeGameWithCombatMission() {
+  return async () => {
+    const { CavernGame } = await import('./engine');
+    const { freeSector, playerSector, monsterSector, treeSector, chestSector, castleSector } =
+      await import('./mission');
+    const game = new CavernGame('gameCanvas');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    game.player = new Player('tester');
+    game.getGameMode().handleKey('m');
+    const PX = 10, PY = 10;
+    game.player.x = PX;
+    game.player.y = PY;
+    // Provide a clean, known grid around the player
+    for (let dx = -3; dx <= 3; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        game.currentMission.setXY(PX + dx, PY + dy, freeSector());
+      }
+    }
+    game.currentMission.setXY(PX, PY, playerSector());
+    return { game, freeSector, playerSector, monsterSector, treeSector, chestSector, castleSector, PX, PY };
+  };
+}
+
+// ---------------------------------------------------------------------------
+// doSword() — grid-state tests
+// ---------------------------------------------------------------------------
+describe('CavernGame.doSword()', () => {
+  setupMovePlayerEnv();
+  const makeGame = makeGameWithCombatMission();
+
+  it('chopping a TreeSector replaces it with a FreeSector', async () => {
+    const { game, treeSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, treeSector());
+
+    game.doSword(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+  });
+
+  it('swording a ChestSector leaves the chest intact', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, chestSector(10));
+
+    game.doSword(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('chest');
+  });
+
+  it('swording a CastleSector leaves the castle intact', async () => {
+    const { game, castleSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, castleSector());
+
+    game.doSword(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('castle');
+  });
+
+  it('non-fatal attack on a monster reduces its points and leaves it on the grid', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    // Use 1000 points so the monster survives any sword hit
+    const toughMonster = { name: 'Titan', points: 1000, worth: 50, invisible: false };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(toughMonster));
+
+    game.doSword(1, 0);
+
+    const cell = game.currentMission.getXY(PX + 1, PY);
+    expect(cell.kind).toBe('monster');
+    if (cell.kind === 'monster') {
+      expect(cell.monster.points).toBeLessThan(1000);
+    }
+  });
+
+  it('fatal attack on a monster removes it from the grid', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    // 1 HP — guaranteed to die from any sword hit
+    const weakMonster = { name: 'Rat', points: 1, worth: 5, invisible: false };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(weakMonster));
+
+    game.doSword(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+  });
+
+  it('fatal attack on a monster awards the player experience', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    const initialExp = game.player.exp;
+    const weakMonster = { name: 'Rat', points: 1, worth: 10, invisible: false };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(weakMonster));
+
+    game.doSword(1, 0);
+
+    expect(game.player.exp).toBeGreaterThan(initialExp);
+  });
+
+  it('killing the objective monster decrements the mission quota', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    const targetName = game.currentMission.objectiveMonsterName();
+    const targetMonster = game.monsterList.find(m => m.name === targetName)!;
+    const weakTarget = { ...targetMonster, points: 1 };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(weakTarget));
+    const statusBefore = game.currentMission.status();
+
+    game.doSword(1, 0);
+
+    expect(game.currentMission.status()).not.toEqual(statusBefore);
+  });
+
+  it('swording an out-of-bounds cell does nothing', async () => {
+    const { game, playerSector } = await makeGame();
+    game.player.x = 0;
+    game.player.y = 0;
+    game.currentMission.setXY(0, 0, playerSector());
+    const expBefore = game.player.exp;
+
+    // sword west — would land at x=-1, out of bounds
+    game.doSword(-1, 0);
+
+    expect(game.player.exp).toBe(expBefore);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// doBow() — grid-state tests
+// ---------------------------------------------------------------------------
+describe('CavernGame.doBow()', () => {
+  setupMovePlayerEnv();
+  const makeGame = makeGameWithCombatMission();
+
+  it('firing the bow always decrements player arrows by 1', async () => {
+    const { game, PX, PY } = await makeGame();
+    const arrowsBefore = game.player.arrows;
+    // Clear east corridor so arrow flies off the edge
+    for (let dx = 1; dx <= 3; dx++) {
+      game.currentMission.setXY(PX + dx, PY, (await import('./mission')).freeSector());
+    }
+
+    game.doBow(1, 0);
+
+    expect(game.player.arrows).toBe(arrowsBefore - 1);
+  });
+
+  it('arrow flying into empty space does not change any grid cells', async () => {
+    const { game, freeSector, PX, PY } = await makeGame();
+    // Ensure clear corridor east to the edge
+    for (let dx = 1; dx < 39 - PX; dx++) {
+      game.currentMission.setXY(PX + dx, PY, freeSector());
+    }
+
+    game.doBow(1, 0);
+
+    // Sample a few cells — they should all still be free
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 2, PY).kind).toBe('free');
+  });
+
+  it('arrow hitting a TreeSector does not remove the tree', async () => {
+    const { game, treeSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, treeSector());
+
+    game.doBow(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('tree');
+  });
+
+  it('arrow hitting a ChestSector does not remove the chest', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, chestSector(20));
+
+    game.doBow(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('chest');
+  });
+
+  it('arrow hitting a CastleSector does not remove the castle', async () => {
+    const { game, castleSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, castleSector());
+
+    game.doBow(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('castle');
+  });
+
+  it('non-fatal arrow hit on a monster reduces its points and leaves it on the grid', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    const toughMonster = { name: 'Titan', points: 10000, worth: 50, invisible: false };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(toughMonster));
+
+    game.doBow(1, 0);
+
+    const cell = game.currentMission.getXY(PX + 1, PY);
+    expect(cell.kind).toBe('monster');
+    if (cell.kind === 'monster') {
+      expect(cell.monster.points).toBeLessThan(10000);
+    }
+  });
+
+  it('fatal arrow hit on a monster removes it from the grid', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    const weakMonster = { name: 'Fly', points: 1, worth: 2, invisible: false };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(weakMonster));
+
+    game.doBow(1, 0);
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+  });
+
+  it('arrow stops on first non-free sector and does not affect cells beyond it', async () => {
+    const { game, treeSector, chestSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, treeSector());
+    game.currentMission.setXY(PX + 2, PY, chestSector(5));
+
+    game.doBow(1, 0);
+
+    // Tree stays, chest behind it is untouched
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('tree');
+    expect(game.currentMission.getXY(PX + 2, PY).kind).toBe('chest');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// doOpenChest() — grid-state tests
+// ---------------------------------------------------------------------------
+describe('CavernGame.doOpenChest()', () => {
+  setupMovePlayerEnv();
+  const makeGame = makeGameWithCombatMission();
+
+  it('opening an adjacent gold chest removes it from the grid', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY, chestSector(25));
+
+    game.doOpenChest();
+
+    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+  });
+
+  it('opening an adjacent gold chest adds gold to the player', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    const goldBefore = game.player.gold;
+    game.currentMission.setXY(PX + 1, PY, chestSector(25));
+
+    game.doOpenChest();
+
+    expect(game.player.gold).toBe(goldBefore + 25);
+  });
+
+  it('opening an adjacent item chest adds the item to the player inventory', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    const { Armor } = await import('./item');
+    const myArmor = new Armor('Iron Shield', 5);
+    game.currentMission.setXY(PX + 1, PY, chestSector(0, myArmor));
+
+    game.doOpenChest();
+
+    expect(game.player.items.length).toBe(1);
+    expect(game.player.items[0]).toBeInstanceOf(Armor);
+  });
+
+  it('when no chest is adjacent, grid and player gold are unchanged', async () => {
+    const { game, freeSector, PX, PY } = await makeGame();
+    // Ensure all 8 adjacent cells are free
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        if (dx !== 0 || dy !== 0) {
+          game.currentMission.setXY(PX + dx, PY + dy, freeSector());
+        }
+      }
+    }
+    const goldBefore = game.player.gold;
+
+    game.doOpenChest();
+
+    expect(game.player.gold).toBe(goldBefore);
+  });
+
+  it('opening a chest diagonal to the player works (adjacency includes diagonals)', async () => {
+    const { game, chestSector, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 1, PY + 1, chestSector(10));
+
+    game.doOpenChest();
+
+    expect(game.currentMission.getXY(PX + 1, PY + 1).kind).toBe('free');
+  });
+});
