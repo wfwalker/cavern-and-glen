@@ -4,11 +4,11 @@ import { Player } from './player';
 import { Monster } from './engine';
 import { Item } from './item';
 
-export type Flavor = 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'me';
+
 
 // Base class for all sector types
 export abstract class BaseSector {
-    abstract readonly kind: Flavor | 'player';
+    abstract readonly kind: 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'player';
 }
 
 export class FreeSector extends BaseSector {
