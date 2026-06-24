@@ -507,37 +507,7 @@ export class CavernGame {
                 // console.log(this.currentMission.forestRows + ", " + this.currentMission.forestCols);
                 if (this.currentMission.inForest(x, y)) {
                     const thisSector = this.currentMission.getXY(x, y);
-                    switch (thisSector.kind) {
-                        // case 'monster': tempRowString += ' X '; break;
-                        case 'monster': {
-                            if (thisSector.monster.invisible) {
-                                tempRowString += ' \u00B7 ';
-                            } else {
-                                const monsterName = thisSector.monster.name;
-                                tempRowString += ' ' + monsterName[0] + monsterName[1];
-                            }
-                            break;
-                        }
-                        case 'tree':
-                            tempRowString += thisSector.pic; 
-                            break;
-                        case 'chest':
-                            tempRowString += ' \u2302 ';
-                            break;
-                        case 'castle':
-                            if (thisSector.me_inside) {
-                                tempRowString += '\u00AB\u263A\u00BB';
-                            } else {
-                                tempRowString += '\u00AB \u00BB';
-                            }
-                            break;
-                        case 'free':
-                            tempRowString += ' \u00B7 ';
-                            break;
-                        case 'player':
-                            tempRowString += ' \u263B ';
-                            break;
-                    }
+                    tempRowString += thisSector.displayString();
                 } else {
                     tempRowString += ' + ';
                 }
