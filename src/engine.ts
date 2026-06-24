@@ -6,7 +6,7 @@ import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
-import { freeSector, monsterSector } from './sector';
+import { freeSector, monsterSector, GameContext } from './sector';
 
 
 export interface Monster {
@@ -378,13 +378,9 @@ export class CavernGame {
         if (this.currentMission.inForest(newX, newY)) {
             const oldSector = this.currentMission.getXY(this.player.x, this.player.y);
             const newSector = this.currentMission.getXY(newX, newY);
-            const result = newSector.playerMoveTo();
 
-            if (result.message) {
-                this.drawCommandWindowMessage(result.message);
-            }
-
-            if (result.canEnter) {
+            if (newSector.canEnter(this)) {
+                const result = newSector.playerMoveTo(this);
                 // Handle leaving old cell
                 if (result.leaveSector !== undefined) {
                     this.currentMission.place(this.player.x, this.player.y, result.leaveSector);
@@ -396,7 +392,7 @@ export class CavernGame {
                 }
 
                 // Place the new sector and update player position
-                this.currentMission.place(newX, newY, result.enterSector!);
+                this.currentMission.place(newX, newY, result.enterSector);
                 this.player.x = newX;
                 this.player.y = newY;
             }
