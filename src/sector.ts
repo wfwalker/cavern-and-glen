@@ -6,10 +6,27 @@ import { Item } from './item';
 
 
 
+export interface MoveResult {
+    canEnter: boolean;
+    message?: string;
+    enterSector?: Sector;   // what the destination cell becomes
+    leaveSector?: Sector;   // if provided, overrides onPlayerLeave for old cell
+}
+
 // Base class for all sector types
 export abstract class BaseSector {
     abstract readonly kind: 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'player';
     abstract displayString(): string;
+
+    /** What happens when a player tries to move onto this sector. */
+    playerMoveTo(): MoveResult {
+        return { canEnter: false };
+    }
+
+    /** What the old cell becomes when a player leaves it. Return null to keep it in place. */
+    onPlayerLeave(): Sector | null {
+        return new FreeSector();
+    }
 }
 
 export class FreeSector extends BaseSector {
@@ -18,6 +35,9 @@ export class FreeSector extends BaseSector {
     constructor(trap: boolean = false) { super(); this._trap = trap; }
     get trap(): boolean { return this._trap; }
     displayString(): string { return ' \u00B7 '; }
+    playerMoveTo(): MoveResult {
+        return { canEnter: true, enterSector: new PlayerSector() };
+    }
 }
 
 export class TreeSector extends BaseSector {
@@ -39,6 +59,9 @@ export class MonsterSector extends BaseSector {
         }
         return ' ' + this._monster.name[0] + this._monster.name[1];
     }
+    playerMoveTo(): MoveResult {
+        return { canEnter: false, message: 'collide with ' + this._monster.name };
+    }
 }
 
 export class CastleSector extends BaseSector {
@@ -50,6 +73,13 @@ export class CastleSector extends BaseSector {
     displayString(): string {
         return this._me_inside ? '\u00AB\u263A\u00BB' : '\u00AB \u00BB';
     }
+    playerMoveTo(): MoveResult {
+        return { canEnter: true, enterSector: new CastleSector(true), leaveSector: new FreeSector() };
+    }
+    onPlayerLeave(): Sector | null {
+        this._me_inside = false;
+        return null;
+    }
 }
 
 export class ChestSector extends BaseSector {
@@ -60,6 +90,9 @@ export class ChestSector extends BaseSector {
     get gold(): number { return this._gold; }
     get item(): Item | undefined { return this._item; }
     displayString(): string { return ' \u2302 '; }
+    playerMoveTo(): MoveResult {
+        return { canEnter: false, message: 'collide with chest' };
+    }
 }
 
 export class PlayerSector extends BaseSector {
@@ -68,6 +101,9 @@ export class PlayerSector extends BaseSector {
     constructor(trapped: boolean = false) { super(); this._trapped = trapped; }
     get trapped(): boolean { return this._trapped; }
     displayString(): string { return ' \u263B '; }
+    playerMoveTo(): MoveResult {
+        return { canEnter: false, message: 'collide with ANOTHER PLAYER' };
+    }
 }
 
 // Discriminated union of class instances — preserves existing switch/kind narrowing

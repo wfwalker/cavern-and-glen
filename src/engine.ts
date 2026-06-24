@@ -6,7 +6,7 @@ import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
-import { freeSector, playerSector, castleSector, monsterSector } from './sector';
+import { freeSector, monsterSector } from './sector';
 
 
 export interface Monster {
@@ -378,36 +378,27 @@ export class CavernGame {
         if (this.currentMission.inForest(newX, newY)) {
             const oldSector = this.currentMission.getXY(this.player.x, this.player.y);
             const newSector = this.currentMission.getXY(newX, newY);
-            switch (newSector.kind) {
-                case 'monster': {
-                    const monsterName = newSector.monster.name;
-                    this.drawCommandWindowMessage("collide with " + monsterName);
-                    break;
-                }
-                case 'chest':
-                    this.drawCommandWindowMessage("collide with chest");
-                    break;
-                case 'castle':
-                    this.currentMission.place(this.player.x, this.player.y, freeSector());
-                    this.currentMission.place(newX, newY, castleSector(true));
-                    this.player.x = newX;
-                    this.player.y = newY;            
-                    break;
-                case 'free':
-                    // if leaving a castle, just set it to be empty
-                    if (oldSector.kind === 'castle') {
-                        oldSector.me_inside = false;
-                    } else {
-                        this.currentMission.place(this.player.x, this.player.y, freeSector());
-                    }
+            const result = newSector.playerMoveTo();
 
-                    this.currentMission.place(newX, newY, playerSector());
-                    this.player.x = newX;
-                    this.player.y = newY;            
-                    break;
-                case 'player':
-                    this.drawCommandWindowMessage("collide with ANOTHER PLAYER");
-                    break;
+            if (result.message) {
+                this.drawCommandWindowMessage(result.message);
+            }
+
+            if (result.canEnter) {
+                // Handle leaving old cell
+                if (result.leaveSector !== undefined) {
+                    this.currentMission.place(this.player.x, this.player.y, result.leaveSector);
+                } else {
+                    const replacement = oldSector.onPlayerLeave();
+                    if (replacement) {
+                        this.currentMission.place(this.player.x, this.player.y, replacement);
+                    }
+                }
+
+                // Place the new sector and update player position
+                this.currentMission.place(newX, newY, result.enterSector!);
+                this.player.x = newX;
+                this.player.y = newY;
             }
         }
     }
