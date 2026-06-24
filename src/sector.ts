@@ -10,10 +10,7 @@ export interface GameContext {
     drawCommandWindowMessage(message: string): void;
 }
 
-export interface MoveResult {
-    enterSector: Sector;   // what the destination cell becomes
-    leaveSector?: Sector;   // if provided, overrides onPlayerLeave for old cell
-}
+
 
 // Base class for all sector types
 export abstract class BaseSector {
@@ -25,8 +22,8 @@ export abstract class BaseSector {
         return false;
     }
 
-    /** What happens when a player tries to move onto this sector. Only called if canEnter returns true. */
-    playerMoveTo(context: GameContext): MoveResult {
+    /** What happens when a player tries to move onto this sector. Only called if canEnter returns true. Returns the new Sector for the destination cell. */
+    playerMoveTo(context: GameContext): Sector {
         throw new Error("Cannot enter this sector");
     }
 
@@ -45,8 +42,8 @@ export class FreeSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         return true;
     }
-    playerMoveTo(context: GameContext): MoveResult {
-        return { enterSector: new PlayerSector() };
+    playerMoveTo(context: GameContext): Sector {
+        return new PlayerSector();
     }
 }
 
@@ -87,8 +84,8 @@ export class CastleSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         return true;
     }
-    playerMoveTo(context: GameContext): MoveResult {
-        return { enterSector: new CastleSector(true), leaveSector: new FreeSector() };
+    playerMoveTo(context: GameContext): Sector {
+        return new CastleSector(true);
     }
     onPlayerLeave(): Sector | null {
         this._me_inside = false;

@@ -380,19 +380,15 @@ export class CavernGame {
             const newSector = this.currentMission.getXY(newX, newY);
 
             if (newSector.canEnter(this)) {
-                const result = newSector.playerMoveTo(this);
+                const enterSector = newSector.playerMoveTo(this);
                 // Handle leaving old cell
-                if (result.leaveSector !== undefined) {
-                    this.currentMission.place(this.player.x, this.player.y, result.leaveSector);
-                } else {
-                    const replacement = oldSector.onPlayerLeave();
-                    if (replacement) {
-                        this.currentMission.place(this.player.x, this.player.y, replacement);
-                    }
+                const replacement = oldSector.onPlayerLeave();
+                if (replacement) {
+                    this.currentMission.place(this.player.x, this.player.y, replacement);
                 }
 
                 // Place the new sector and update player position
-                this.currentMission.place(newX, newY, result.enterSector);
+                this.currentMission.place(newX, newY, enterSector);
                 this.player.x = newX;
                 this.player.y = newY;
             }
