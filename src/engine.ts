@@ -6,7 +6,7 @@ import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
-import { freeSector, monsterSector, GameContext } from './sector';
+import { freeSector, monsterSector, GameContext, GameSwordContext, GameBowContext } from './sector';
 
 
 export interface Monster {
@@ -157,45 +157,19 @@ export class CavernGame {
             console.log("doSword inForest found");
             console.log(targetSector);
 
-            switch(targetSector.kind) {
-                case 'tree':
-                    this.drawCommandWindowMessage("You chopped down the tree");
-                    this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
-                    this.drawForestNearPlayer();
-                    break;
-                case 'chest':
-                    this.drawCommandWindowMessage("You hit a chest");
-                    break;
-                case 'castle':
-                    this.drawCommandWindowMessage("You hit a castle");
-                    break;
-                case 'monster': {
-                    const damage = this.player.swordDamage();
-                    console.log("damage " + damage);
-                    targetSector.monster.points -= damage;
-                    console.log(targetSector.monster);
-                    if (targetSector.monster.points < 0) {
-                        this.drawCommandWindowMessage("You killed the " + targetSector.monster.name);
+            const context: GameSwordContext = {
+                drawCommandWindowMessage: (msg) => this.drawCommandWindowMessage(msg),
+                getSwordDamage: () => this.player.swordDamage(),
+                gainExperienceFromMonster: (m) => this.player.gainExperienceFromMonster(m),
+                objectiveMonsterName: () => this.currentMission.objectiveMonsterName(),
+                decrementTargetMonsterQuota: () => this.currentMission.decrementTargetMonsterQuota(),
+                drawStats: (inv) => this.drawStats(inv)
+            };
 
-                        // update stats from new experience
-                        this.player.gainExperienceFromMonster(targetSector.monster);
-                        this.drawStats(false);
-
-                        //  clear the grid Sector where the monster was
-                        this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
-                        this.drawForestNearPlayer();
-
-                        if (this.currentMission.objectiveMonsterName() === targetSector.monster.name)
-                        {
-                            this.currentMission.decrementTargetMonsterQuota();
-                            this.drawStats(false);
-                        }
-                    } else {
-                        this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
-                    }
-
-                    break;
-                }
+            const result = targetSector.onSwordHit(context);
+            if (result.shouldClearSector) {
+                this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
+                this.drawForestNearPlayer();
             }
 
         } else {
@@ -212,42 +186,21 @@ export class CavernGame {
         let curY = this.player.y + dy;
         let hitSomething = false;
 
+        const context: GameBowContext = {
+            drawCommandWindowMessage: (msg) => this.drawCommandWindowMessage(msg),
+            getBowDamage: () => 4 + Math.round(this.player.exp / 10),
+            gainExperienceFromMonster: (m) => this.player.gainExperienceFromMonster(m)
+        };
+
         while (this.currentMission.inForest(curX, curY)) {
             const targetSector = this.currentMission.getXY(curX, curY);
 
             if (targetSector.kind !== 'free') {
                 hitSomething = true;
 
-                switch (targetSector.kind) {
-                    case 'monster': {
-                        const bowDamage = 4 + Math.round(this.player.exp / 10); // from CAVERN.PAS
-                        targetSector.monster.points -= bowDamage;
-
-                        if (targetSector.monster.points < 0) {
-                            this.drawCommandWindowMessage("You killed the " + targetSector.monster.name);
-                            this.player.gainExperienceFromMonster(targetSector.monster);
-                            this.currentMission.setXY(curX, curY, freeSector());
-                        } else {
-                            this.drawCommandWindowMessage("You hit the " + targetSector.monster.name);
-                        }
-                        break;
-                    }
-
-                    case 'tree':
-                        this.drawCommandWindowMessage("The arrow struck a tree.");
-                        break;
-
-                    case 'chest':
-                        this.drawCommandWindowMessage("The arrow ricocheted off a chest.");
-                        break;
-
-                    case 'castle':
-                        this.drawCommandWindowMessage("The arrow hit a castle wall.");
-                        break;
-
-                    default:
-                        this.drawCommandWindowMessage("The arrow hit something.");
-                        break;
+                const result = targetSector.onBowHit(context);
+                if (result.shouldClearSector) {
+                    this.currentMission.setXY(curX, curY, freeSector());
                 }
 
                 this.drawForestNearPlayer();

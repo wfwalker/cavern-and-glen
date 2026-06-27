@@ -10,6 +10,29 @@ export interface GameContext {
     drawCommandWindowMessage(message: string): void;
 }
 
+export interface GameSwordContext {
+    drawCommandWindowMessage(message: string): void;
+    getSwordDamage(): number;
+    gainExperienceFromMonster(monster: Monster): void;
+    objectiveMonsterName(): string;
+    decrementTargetMonsterQuota(): void;
+    drawStats(inverse: boolean): void;
+}
+
+export interface SwordHitResult {
+    shouldClearSector: boolean;
+}
+
+export interface GameBowContext {
+    drawCommandWindowMessage(message: string): void;
+    getBowDamage(): number;
+    gainExperienceFromMonster(monster: Monster): void;
+}
+
+export interface BowHitResult {
+    shouldClearSector: boolean;
+}
+
 
 
 // Base class for all sector types
@@ -30,6 +53,17 @@ export abstract class BaseSector {
     /** What the old cell becomes when a player leaves it. Return null to keep it in place. */
     onPlayerLeave(): Sector | null {
         return new FreeSector();
+    }
+
+    /** Handles the sword action on this sector. */
+    onSwordHit(context: GameSwordContext): SwordHitResult {
+        return { shouldClearSector: false };
+    }
+
+    /** Handles the bow action on this sector. */
+    onBowHit(context: GameBowContext): BowHitResult {
+        context.drawCommandWindowMessage("The arrow hit something.");
+        return { shouldClearSector: false };
     }
 }
 
@@ -53,6 +87,14 @@ export class TreeSector extends BaseSector {
     constructor() { super(); }
     get pic(): string { return this._pic; }
     displayString(): string { return this._pic; }
+    onSwordHit(context: GameSwordContext): SwordHitResult {
+        context.drawCommandWindowMessage("You chopped down the tree");
+        return { shouldClearSector: true };
+    }
+    onBowHit(context: GameBowContext): BowHitResult {
+        context.drawCommandWindowMessage("The arrow struck a tree.");
+        return { shouldClearSector: false };
+    }
 }
 
 export class MonsterSector extends BaseSector {
@@ -69,6 +111,36 @@ export class MonsterSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         context.drawCommandWindowMessage('collide with ' + this._monster.name);
         return false;
+    }
+    onSwordHit(context: GameSwordContext): SwordHitResult {
+        const damage = context.getSwordDamage();
+        this._monster.points -= damage;
+        if (this._monster.points < 0) {
+            context.drawCommandWindowMessage("You killed the " + this._monster.name);
+            context.gainExperienceFromMonster(this._monster);
+            context.drawStats(false);
+
+            if (context.objectiveMonsterName() === this._monster.name) {
+                context.decrementTargetMonsterQuota();
+                context.drawStats(false);
+            }
+            return { shouldClearSector: true };
+        } else {
+            context.drawCommandWindowMessage("You hit the " + this._monster.name);
+            return { shouldClearSector: false };
+        }
+    }
+    onBowHit(context: GameBowContext): BowHitResult {
+        const damage = context.getBowDamage();
+        this._monster.points -= damage;
+        if (this._monster.points < 0) {
+            context.drawCommandWindowMessage("You killed the " + this._monster.name);
+            context.gainExperienceFromMonster(this._monster);
+            return { shouldClearSector: true };
+        } else {
+            context.drawCommandWindowMessage("You hit the " + this._monster.name);
+            return { shouldClearSector: false };
+        }
     }
 }
 
@@ -91,6 +163,14 @@ export class CastleSector extends BaseSector {
         this._me_inside = false;
         return null;
     }
+    onSwordHit(context: GameSwordContext): SwordHitResult {
+        context.drawCommandWindowMessage("You hit a castle");
+        return { shouldClearSector: false };
+    }
+    onBowHit(context: GameBowContext): BowHitResult {
+        context.drawCommandWindowMessage("The arrow hit a castle wall.");
+        return { shouldClearSector: false };
+    }
 }
 
 export class ChestSector extends BaseSector {
@@ -104,6 +184,14 @@ export class ChestSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         context.drawCommandWindowMessage('collide with chest');
         return false;
+    }
+    onSwordHit(context: GameSwordContext): SwordHitResult {
+        context.drawCommandWindowMessage("You hit a chest");
+        return { shouldClearSector: false };
+    }
+    onBowHit(context: GameBowContext): BowHitResult {
+        context.drawCommandWindowMessage("The arrow ricocheted off a chest.");
+        return { shouldClearSector: false };
     }
 }
 
