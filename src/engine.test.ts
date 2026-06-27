@@ -1,8 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { Player } from './player';
-import { TitleMode, PlayingMode } from './gamemode'
-import { Armor } from './item'; 
+import fs from 'node:fs';
+import path from 'node:path';
 import { PlayerSector, TreeSector, ChestSector, CastleSector, MonsterSector, FreeSector } from './sector';
+import { CavernGame } from './engine';
+import { Player } from './player';
+import { TitleMode, PlayingMode } from './gamemode';
+import { Armor, buildItemListFromJSON } from './item';
 
 const freeSector = () => new FreeSector();
 const playerSector = () => new PlayerSector();
@@ -10,8 +13,14 @@ const treeSector = () => new TreeSector();
 const castleSector = (playerInside?: boolean) => new CastleSector(playerInside);
 const chestSector = (gold: number, item?: any) => new ChestSector(gold, item);
 const monsterSector = (monster: any) => new MonsterSector(monster);
-import fs from 'node:fs';
-import path from 'node:path';
+
+const loadTestData = () => {
+  const monstersPath = path.resolve(__dirname, '../public/monsters.json');
+  const itemsPath = path.resolve(__dirname, '../public/items.json');
+  const monsters = JSON.parse(fs.readFileSync(monstersPath, 'utf-8')).monsterList;
+  const items = buildItemListFromJSON(JSON.parse(fs.readFileSync(itemsPath, 'utf-8')).itemList);
+  return { monsters, items };
+};
 
 describe('engine test import', () => {
   it('should import Items correctly', async () => {
@@ -24,70 +33,24 @@ describe('engine test import', () => {
 });
 
 describe('CavernGame Engine - Real Data File Test', () => {
-  let mockCanvas: HTMLCanvasElement;
-
-  beforeEach(() => {
-    // 1. Reset the document body completely
-    document.body.innerHTML = '';
-
-    // 2. Create the canvas element programmatically
-    mockCanvas = document.createElement('canvas');
-    document.body.appendChild(mockCanvas);
-
-    // 3. FORCE getElementById to always return this canvas, no matter what ID your engine looks for
-    vi.spyOn(document, 'getElementById').mockReturnValue(mockCanvas);
-
-    // 4. Mock global fetch (your file system loader from the previous step)
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      const fileName = url.replace('./', ''); 
-      const filePath = path.resolve(__dirname, '../public', fileName);
-      try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(JSON.parse(fileContent)),
-        });
-      } catch (error) {
-        return Promise.reject(error);
-      }
-    }));
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
-
   it('should read the real items.json immediately on construction', async () => {
-    // Dynamically import inside the test block so it catches the mocks above
-    const { CavernGame } = await import('./engine');
-    
-    const game = new CavernGame('gameCanvas');
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
     expect(game).toBeDefined();
-    
-    // Allow the async fetch in the constructor to finish processing
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(game.monsterList.length > 0);
+    expect(game.monsterList.length).toBeGreaterThan(0);
   });
 
   it('should generate a mission if player exists', async () => {
-    // Dynamically import inside the test block so it catches the mocks above
-    const { CavernGame } = await import('./engine');
-    
-    const game = new CavernGame('gameCanvas');
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
     expect(game).toBeDefined();
-    
-    // Allow the async fetch in the constructor to finish processing
-    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(game.getGameMode()).toBeInstanceOf(TitleMode);
     game.player = new Player('bob');
     game.getGameMode().handleKey('m');
     expect(game.currentMission).toBeDefined();
     expect(game.getGameMode()).toBeInstanceOf(PlayingMode);
-  
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +68,6 @@ describe('CavernGame Engine - Real Data File Test', () => {
 //     screenRow(dy) = 2 * (player.y + 4 - (player.y + dy)) = 2 * (4 - dy)
 
 describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
-  setupMovePlayerEnv(); // reuses the canvas/fetch mock setup defined earlier
 
   // Player is placed at (PX=10, PY=10) after mission start.
   const PX = 10, PY = 10;
@@ -130,9 +92,8 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
   }
 
   async function makeGameForDraw() {
-    const { CavernGame } = await import('./engine');
-    const game = new CavernGame('gameCanvas');
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
     game.player = new Player('tester');
     game.getGameMode().handleKey('m');
     // Pin player position and fill the whole viewport with FreeSectors so
@@ -257,53 +218,12 @@ describe('CavernGame.drawForestNearPlayer() - screen buffer', () => {
     expect(game.getScreenRow(screenRow(0), 24, 24)).toBe('Z');
   });
 });
-});
 
 // ---------------------------------------------------------------------------
-// movePlayer() — grid state tests
-// ---------------------------------------------------------------------------
-// Helper: builds the shared mock environment used by every test in this suite.
-// Returns a factory that, when called inside a test, gives back a fully
-// initialised CavernGame with a started mission and the player placed at (10,10).
-function setupMovePlayerEnv() {
-  let mockCanvas: HTMLCanvasElement;
-
-  beforeEach(() => {
-    document.body.innerHTML = '';
-    mockCanvas = document.createElement('canvas');
-    document.body.appendChild(mockCanvas);
-    vi.spyOn(document, 'getElementById').mockReturnValue(mockCanvas);
-
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      const fileName = url.replace('./', '');
-      const filePath = path.resolve(__dirname, '../public', fileName);
-      try {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(JSON.parse(fileContent)),
-        });
-      } catch (error) {
-        return Promise.reject(error);
-      }
-    }));
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
-}
-
 describe('CavernGame.movePlayer() - grid updates', () => {
-  setupMovePlayerEnv();
-
   async function makeGameWithMission() {
-    const { CavernGame } = await import('./engine');
-    const game = new CavernGame('gameCanvas');
-    // Wait for async fetch (monster/item lists) to resolve
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
     // Start a mission
     game.player = new Player('tester');
     game.getGameMode().handleKey('m');
@@ -397,9 +317,8 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 // ---------------------------------------------------------------------------
 function makeGameWithCombatMission() {
   return async () => {
-    const { CavernGame } = await import('./engine');
-    const game = new CavernGame('gameCanvas');
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
     game.player = new Player('tester');
     game.getGameMode().handleKey('m');
     const PX = 10, PY = 10;
@@ -420,7 +339,6 @@ function makeGameWithCombatMission() {
 // doSword() — grid-state tests
 // ---------------------------------------------------------------------------
 describe('CavernGame.doSword()', () => {
-  setupMovePlayerEnv();
   const makeGame = makeGameWithCombatMission();
 
   it('chopping a TreeSector replaces it with a FreeSector', async () => {
@@ -518,7 +436,6 @@ describe('CavernGame.doSword()', () => {
 // doBow() — grid-state tests
 // ---------------------------------------------------------------------------
 describe('CavernGame.doBow()', () => {
-  setupMovePlayerEnv();
   const makeGame = makeGameWithCombatMission();
 
   it('firing the bow always decrements player arrows by 1', async () => {
@@ -616,7 +533,6 @@ describe('CavernGame.doBow()', () => {
 // doOpenChest() — grid-state tests
 // ---------------------------------------------------------------------------
 describe('CavernGame.doOpenChest()', () => {
-  setupMovePlayerEnv();
   const makeGame = makeGameWithCombatMission();
 
   it('opening an adjacent gold chest removes it from the grid', async () => {

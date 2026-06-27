@@ -7,6 +7,8 @@ import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
 import { FreeSector, MonsterSector, GameContext, GameSwordContext, GameBowContext, GameChestOpenContext } from './sector';
+import { CanvasRenderer } from './canvasrenderer';
+import { AssetRepository } from './assetrepository';
 
 
 export interface Monster {
@@ -24,17 +26,12 @@ export const adjacentSectors = [
 
 
 export class CavernGame {
-    private canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
-
     // Track the current mode
     private currentMode: GameMode = new TitleMode(this);
 
     // Text terminal dimensions (classic IBM PC text mode)
     private readonly COLS = 80;
     private readonly ROWS = 25;
-    private readonly CHAR_WIDTH = 8;
-    private readonly CHAR_HEIGHT = 8;
 
     private commandWindow: TextWindow;
 
@@ -48,30 +45,24 @@ export class CavernGame {
     // Terminal Screen buffer manager
     private screenBuffer: ScreenBuffer;
 
-    constructor(canvasId: string) {
-        this.loadMonsterList();
-        this.loadItemList();
-
-        this.canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-        this.ctx = this.canvas.getContext('2d')!;
-
+    constructor(monsterList: Monster[], itemList: Item[]) {
+        this.monsterList = monsterList;
+        this.itemList = itemList;
         this.player = null as any;
-        
-        this.canvas.width = this.COLS * this.CHAR_WIDTH;
-        this.canvas.height = this.ROWS * this.CHAR_HEIGHT;
 
         this.screenBuffer = new ScreenBuffer(this.COLS, this.ROWS);
         this.setupInput();
         this.commandWindow = new TextWindow(this.screenBuffer, { x1: 2, y1: 20, x2: 80, y2: 25 });
 
         this.drawTitlePage();
-        
-        // Start web game loop
-        requestAnimationFrame((t) => this.gameLoop(t));
     }
 
     public getScreenRow(row: number, start: number, end: number): string {
         return this.screenBuffer.getScreenRow(row, start, end);
+    }
+
+    public getScreenBuffer(): ScreenBuffer {
+        return this.screenBuffer;
     }
 
     // Direct replacement for Pascal's GotoXY and Write
@@ -351,29 +342,7 @@ export class CavernGame {
         this.drawCommandWindowMessage(" z  x  d   │  h ── this help");
     }
 
-    private render() {
-        this.ctx.fillStyle = '#000000';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.ctx.font = '8px "Web437_IBM_BIOS"';
-        this.ctx.textBaseline = 'top';
-
-        for (let y = 0; y < this.ROWS; y++) {
-            for (let x = 0; x < this.COLS; x++) {
-                const [char, color, bgColor] = this.screenBuffer.getCell(x, y);
-                const posX = x * this.CHAR_WIDTH;
-                const posY = y * this.CHAR_HEIGHT;
-
-                // Draw background color block
-                this.ctx.fillStyle = bgColor;
-                this.ctx.fillRect(posX, posY, this.CHAR_WIDTH, this.CHAR_HEIGHT);
-
-                // Draw character glyph
-                this.ctx.fillStyle = color;
-                this.ctx.fillText(char, posX, posY);
-            }
-        }
-    }
 
     public drawGameScreen() {
         this.clearScreen();
@@ -447,36 +416,27 @@ export class CavernGame {
         }    
     }
 
-    private async loadMonsterList() {
-        const response = await fetch('./monsters.json');
-        const monsters = await response.json();
-        console.log(monsters);
-        this.monsterList = monsters.monsterList;
-    }
-
-    private async loadItemList() {
-        const response = await fetch('./items.json');
-        const items = await response.json();
-        this.itemList = buildItemListFromJSON(items.itemList);
-        console.log(this.itemList);
-    }
-
-    private gameLoop(timestamp: number) {
-        // Run continuous updates here if monsters move on timers, 
-        // otherwise simply draw screen changes asynchronously.
-        this.render();
-        requestAnimationFrame((t) => this.gameLoop(t));
-    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     // Wait explicitly for the custom IBM PC font file to load into memory
-    document.fonts.load('8px "Web437_IBM_BIOS.woff"').then(() => {
+    document.fonts.load('8px "Web437_IBM_BIOS.woff"').then(async () => {
         console.log("IBM PC font loaded successfully! Booting engine...");
-        new CavernGame('gameCanvas');
+        const repo = new AssetRepository();
+        try {
+            const { monsterList, itemList } = await repo.loadAll();
+            const game = new CavernGame(monsterList, itemList);
+            const renderer = new CanvasRenderer('gameCanvas');
+
+            function loop() {
+                renderer.render(game.getScreenBuffer());
+                requestAnimationFrame(loop);
+            }
+            requestAnimationFrame(loop);
+        } catch (err) {
+            console.error("Failed to load assets:", err);
+        }
     }).catch((err) => {
         console.error("Font failed to load:", err);
-        // Fallback boot anyway
-        new CavernGame('gameCanvas');
     });
 });
