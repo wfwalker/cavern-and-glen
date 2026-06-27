@@ -115,6 +115,77 @@ export class Mission {
         this.grid[x][y] = something;
     }
 
+    public revealAllMonsters() {
+        for (let x = 0; x < this.forestRows; x++) {
+            for (let y = 0; y < this.forestCols; y++) {
+                const monster = this.grid[x][y].monster;
+                if (monster) {
+                    monster.invisible = false;
+                }
+            }
+        }
+    }
+
+    public teleportPlayerRandomly(player: any): { x: number, y: number } | null {
+        const oldX = player.x;
+        const oldY = player.y;
+        const coord = this.findRandomFreeCoordinate();
+        if (coord) {
+            this.setXY(oldX, oldY, new FreeSector());
+            this.setXY(coord.x, coord.y, new PlayerSector());
+            player.x = coord.x;
+            player.y = coord.y;
+            return coord;
+        }
+        return null;
+    }
+
+    public detectChests(player: any, callback: (msg: string) => void): void {
+        let found = false;
+        for (let x = 0; x < this.forestRows; x++) {
+            for (let y = 0; y < this.forestCols; y++) {
+                if (this.grid[x][y] instanceof ChestSector) {
+                    found = true;
+                    let vertical = '';
+                    if (player.y > y) vertical = 'south';
+                    else if (player.y < y) vertical = 'north';
+
+                    let horizontal = '';
+                    if (player.x > x) horizontal = 'west';
+                    else if (player.x < x) horizontal = 'east';
+
+                    callback(`Treasure is ${vertical}${horizontal} of you`);
+                }
+            }
+        }
+        if (!found) {
+            callback('No treasure detected in the forest.');
+        }
+    }
+
+    public detectCastles(player: any, callback: (msg: string) => void): void {
+        let found = false;
+        for (let x = 0; x < this.forestRows; x++) {
+            for (let y = 0; y < this.forestCols; y++) {
+                if (this.grid[x][y] instanceof CastleSector) {
+                    found = true;
+                    let vertical = '';
+                    if (player.y > y) vertical = 'south';
+                    else if (player.y < y) vertical = 'north';
+
+                    let horizontal = '';
+                    if (player.x > x) horizontal = 'west';
+                    else if (player.x < x) horizontal = 'east';
+
+                    callback(`Magic Castle is ${vertical}${horizontal} of you`);
+                }
+            }
+        }
+        if (!found) {
+            callback('No magic castle detected in the forest.');
+        }
+    }
+
     private placeOnRandomFreeSector(something: BaseSector): { x: number, y: number } {
         const targetCoordinate = this.findRandomFreeCoordinate();
         if (!targetCoordinate) {

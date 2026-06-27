@@ -1,6 +1,6 @@
 // engine.ts
 
-import { Item, buildItemListFromJSON } from './item';
+import { Item, buildItemListFromJSON, GameUseItemContext } from './item';
 import { Player } from './player';
 import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
@@ -133,8 +133,14 @@ export class CavernGame {
     }
 
     public doUseItem(item: Item): void {
-        this.player.toggleItemUse(item);
-        this.drawCommandWindowMessage(`toggle usage of ${item.getName()}`);
+        const context: GameUseItemContext = {
+            player: this.player,
+            currentMission: this.currentMission,
+            drawCommandWindowMessage: (msg) => this.drawCommandWindowMessage(msg),
+            drawStats: (inv) => this.drawStats(inv)
+        };
+
+        item.use(context);
     }
 
 

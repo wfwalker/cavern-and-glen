@@ -5,6 +5,26 @@ export type JSONItem =
     | { kind: 'sword'; name: string; strength: number }
     | { kind: 'other'; name: string; power: number }
 
+export interface GameUseItemContext {
+    player: {
+        name: string;
+        exp: number;
+        arrows: number;
+        gold: number;
+        x: number;
+        y: number;
+        toggleItemUse(item: Item): void;
+    };
+    currentMission: {
+        revealAllMonsters(): void;
+        teleportPlayerRandomly(player: any): { x: number, y: number } | null;
+        detectChests(player: any, callback: (msg: string) => void): void;
+        detectCastles(player: any, callback: (msg: string) => void): void;
+    };
+    drawCommandWindowMessage(message: string): void;
+    drawStats(inverse: boolean): void;
+}
+
 export abstract class Item {
 	protected name: string;
 	protected inUse: boolean;
@@ -35,6 +55,10 @@ export abstract class Item {
 	}
 
 	public abstract clone(): Item;
+
+	public use(context: GameUseItemContext): void {
+		context.player.toggleItemUse(this);
+	}
 }
 
 export class Armor extends Item {
@@ -89,6 +113,47 @@ export class Other extends Item {
 	constructor(name: string, power: number) {
 		super(name);
 		this.magicPower = power;
+	}
+
+	public getPower(): number {
+		return this.magicPower;
+	}
+
+	public override use(context: GameUseItemContext): void {
+		this.applyMagicEffect(context);
+	}
+
+	private applyMagicEffect(context: GameUseItemContext): void {
+		const power = this.magicPower;
+		switch (power) {
+			case 1: {
+				context.currentMission.revealAllMonsters();
+				context.drawCommandWindowMessage(`You used ${this.name}: Reveal invisibility`);
+				break;
+			}
+			case 2: {
+				const coord = context.currentMission.teleportPlayerRandomly(context.player);
+				if (coord) {
+					context.drawCommandWindowMessage(`You used ${this.name}: Teleportation to (${coord.x}, ${coord.y})`);
+				}
+				break;
+			}
+			case 3: {
+				context.drawCommandWindowMessage(`You used ${this.name}: Detect Treasure`);
+				context.currentMission.detectChests(context.player, (msg) => context.drawCommandWindowMessage(msg));
+				break;
+			}
+			case 4: {
+				context.drawCommandWindowMessage(`You used ${this.name}: Detect Magic Castle`);
+				context.currentMission.detectCastles(context.player, (msg) => context.drawCommandWindowMessage(msg));
+				break;
+			}
+			default: {
+				context.drawCommandWindowMessage('Nothing happens.');
+				break;
+			}
+		}
+		context.drawStats(false);
 	}
 
 	public clone(): Other {

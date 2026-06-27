@@ -5,7 +5,7 @@ import { PlayerSector, TreeSector, ChestSector, CastleSector, MonsterSector, Fre
 import { CavernGame } from './engine';
 import { Player } from './player';
 import { TitleMode, PlayingMode } from './gamemode';
-import { Armor, buildItemListFromJSON } from './item';
+import { Armor, buildItemListFromJSON, Other } from './item';
 
 const freeSector = () => new FreeSector();
 const playerSector = () => new PlayerSector();
@@ -590,5 +590,86 @@ describe('CavernGame.doOpenChest()', () => {
     game.doOpenChest();
 
     expect(game.currentMission.getXY(PX + 1, PY + 1)).toBeInstanceOf(FreeSector);
+  });
+});
+
+describe('Magic Items Usage', () => {
+  const makeGame = makeGameWithCombatMission();
+
+  it('using a sword/armor toggles its active state and is not consumed', async () => {
+    const { game } = await makeGame();
+    const myArmor = new Armor('Lead Helmet', 2);
+    game.player.receiveItem(myArmor);
+
+    expect(myArmor.getInUse()).toBe(false);
+    game.doUseItem(myArmor);
+    expect(myArmor.getInUse()).toBe(true);
+    expect(game.player.items).toContain(myArmor);
+  });
+
+  it('using Potion (power = 1) reveals invisible monsters', async () => {
+    const { game, PX, PY } = await makeGame();
+    const mockMonster = { name: 'Invisible Bat', points: 10, worth: 5, invisible: true };
+    game.currentMission.setXY(PX + 1, PY, new MonsterSector(mockMonster));
+
+    const potion = new Other('Healing Potion', 1);
+    game.player.receiveItem(potion);
+
+    expect(game.currentMission.getXY(PX + 1, PY).monster?.invisible).toBe(true);
+    game.doUseItem(potion);
+    expect(game.currentMission.getXY(PX + 1, PY).monster?.invisible).toBe(false);
+    expect(game.player.items).toContain(potion);
+  });
+
+  it('using Magic Boots (power = 2) teleports the player to a random free sector', async () => {
+    const { game, PX, PY } = await makeGame();
+    const boots = new Other('Magic Boots', 2);
+    game.player.receiveItem(boots);
+
+    const oldX = game.player.x;
+    const oldY = game.player.y;
+
+    game.doUseItem(boots);
+
+    expect(game.player.x !== oldX || game.player.y !== oldY).toBe(true);
+    expect(game.currentMission.getXY(oldX, oldY)).toBeInstanceOf(FreeSector);
+    expect(game.currentMission.getXY(game.player.x, game.player.y)).toBeInstanceOf(PlayerSector);
+    expect(game.player.items).toContain(boots);
+  });
+
+  it('using Dragon\'s Tooth (power = 3) detects chests', async () => {
+    const { game, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX + 2, PY, new ChestSector(10));
+
+    const tooth = new Other('Dragon\'s Tooth', 3);
+    game.player.receiveItem(tooth);
+
+    const messages: string[] = [];
+    vi.spyOn(game, 'drawCommandWindowMessage').mockImplementation((msg) => {
+      messages.push(msg);
+    });
+
+    game.doUseItem(tooth);
+
+    expect(messages.some(msg => msg.includes('Treasure is east of you'))).toBe(true);
+    expect(game.player.items).toContain(tooth);
+  });
+
+  it('using Ring (power = 4) detects magic castles', async () => {
+    const { game, PX, PY } = await makeGame();
+    game.currentMission.setXY(PX - 1, PY + 1, new CastleSector());
+
+    const ring = new Other('Ring', 4);
+    game.player.receiveItem(ring);
+
+    const messages: string[] = [];
+    vi.spyOn(game, 'drawCommandWindowMessage').mockImplementation((msg) => {
+      messages.push(msg);
+    });
+
+    game.doUseItem(ring);
+
+    expect(messages.some(msg => msg.includes('Magic Castle is northwest of you'))).toBe(true);
+    expect(game.player.items).toContain(ring);
   });
 });
