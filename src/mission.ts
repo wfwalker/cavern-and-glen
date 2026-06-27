@@ -3,7 +3,7 @@
 import { Player } from './player';
 import { Monster } from './engine';
 import { Item } from './item';
-import { freeSector, monsterSector, BaseSector, playerSector, chestSector, treeSector, castleSector, FreeSector, MonsterSector } from './sector';
+import { BaseSector, FreeSector, MonsterSector, PlayerSector, CastleSector, ChestSector, TreeSector } from './sector';
 
 export interface MissionObjective {
     targetMonster: Monster; // must be an entry from the game monsterList
@@ -78,7 +78,7 @@ export class Mission {
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
                 // Check if this specific matrix tile matches our type guard
-                if (this.grid[y][x] instanceof FreeSector) {
+                if (this.grid[y][x].isFree) {
                     freeSpots.push({ x, y });
                 }
             }
@@ -100,7 +100,7 @@ export class Mission {
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
                 // Check if this specific matrix tile matches our type guard
-                if (this.grid[x][y] instanceof MonsterSector) {
+                if (this.grid[x][y].monster !== null) {
                     monsterSpots.push({ x, y });
                 }
             }
@@ -132,7 +132,7 @@ export class Mission {
         const numberOfTrees = Math.round(this.forestRows * this.forestCols * 17 / 100);
 
         for (let i = 0; i < numberOfTrees; i++) {
-            this.placeOnRandomFreeSector(treeSector());
+            this.placeOnRandomFreeSector(new TreeSector());
         }
     }
 
@@ -141,7 +141,7 @@ export class Mission {
         const numCastles = Math.round(this.forestRows * this.forestCols * 0.4 / 100);
 
         for (let i = 0; i < numCastles; i++) {
-            this.placeOnRandomFreeSector(castleSector());
+            this.placeOnRandomFreeSector(new CastleSector());
         }
 
         return numCastles;
@@ -153,10 +153,10 @@ export class Mission {
         for (let i = 0; i < numberOfChests; i++) {
             if (18 * Math.random() > 6) {
                 const goldAmount = Math.round(Math.random() * 50) + 1;
-                this.placeOnRandomFreeSector(chestSector(goldAmount));
+                this.placeOnRandomFreeSector(new ChestSector(goldAmount));
             } else {
                 const randomItem = itemList[Math.floor(Math.random() * itemList.length)];
-                this.placeOnRandomFreeSector(chestSector(0, randomItem.clone()));
+                this.placeOnRandomFreeSector(new ChestSector(0, randomItem.clone()));
             }
         }
 
@@ -164,7 +164,7 @@ export class Mission {
     }
 
     private putPlayerInForest(thePlayer: Player) {
-        const { x, y } = this.placeOnRandomFreeSector(playerSector());
+        const { x, y } = this.placeOnRandomFreeSector(new PlayerSector());
         thePlayer.x = x;
         thePlayer.y = y;
     }
@@ -179,9 +179,9 @@ export class Mission {
 
         for (let i = 0; i < numberOfMonsters; i++) {
             if (i < this.objective.quota ) {
-                this.placeOnRandomFreeSector(monsterSector(this.objective.targetMonster));
+                this.placeOnRandomFreeSector(new MonsterSector(this.objective.targetMonster));
             } else {
-                this.placeOnRandomFreeSector(monsterSector(this.findAppropriateRandomMonster(monsterList)));
+                this.placeOnRandomFreeSector(new MonsterSector(this.findAppropriateRandomMonster(monsterList)));
             }
         }
 
@@ -193,7 +193,7 @@ export class Mission {
         for (let y = 0; y < this.forestRows; y++) {
             const row: BaseSector[] = [];
             for (let x = 0; x < this.forestCols; x++) {
-                row.push(freeSector());
+                row.push(new FreeSector());
             }
             this.grid.push(row);
         }

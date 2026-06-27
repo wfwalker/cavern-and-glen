@@ -6,7 +6,7 @@ import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
-import { freeSector, monsterSector, GameContext, GameSwordContext, GameBowContext, ChestSector, CastleSector, MonsterSector, FreeSector } from './sector';
+import { FreeSector, MonsterSector, GameContext, GameSwordContext, GameBowContext, GameChestOpenContext } from './sector';
 
 
 export interface Monster {
@@ -96,7 +96,7 @@ export class CavernGame {
     }
 
     public playerInCastle(): boolean {
-        return (this.currentMission.getXY(this.player.x, this.player.y) instanceof CastleSector);
+        return this.currentMission.getXY(this.player.x, this.player.y).isCastle;
     }
 
     public readyForMission(): boolean {
@@ -168,7 +168,7 @@ export class CavernGame {
 
             const result = targetSector.onSwordHit(context);
             if (result.shouldClearSector) {
-                this.currentMission.setXY(newLoc.x, newLoc.y, freeSector());
+                this.currentMission.setXY(newLoc.x, newLoc.y, new FreeSector());
                 this.drawForestNearPlayer();
             }
 
@@ -195,12 +195,12 @@ export class CavernGame {
         while (this.currentMission.inForest(curX, curY)) {
             const targetSector = this.currentMission.getXY(curX, curY);
 
-            if (! (targetSector instanceof FreeSector)) {
+            if (!targetSector.isFree) {
                 hitSomething = true;
 
                 const result = targetSector.onBowHit(context);
                 if (result.shouldClearSector) {
-                    this.currentMission.setXY(curX, curY, freeSector());
+                    this.currentMission.setXY(curX, curY, new FreeSector());
                 }
 
                 this.drawForestNearPlayer();
@@ -218,6 +218,15 @@ export class CavernGame {
     }
 
     public doOpenChest() {
+        const context: GameChestOpenContext = {
+            drawCommandWindowMessage: (msg) => this.drawCommandWindowMessage(msg),
+            addGold: (amount) => { this.player.gold += amount; },
+            receiveItem: (item) => this.player.receiveItem(item),
+            drawItems: () => this.drawItems(),
+            drawStats: (inv) => this.drawStats(inv),
+            drawForestNearPlayer: () => this.drawForestNearPlayer()
+        };
+
         for (const { dx, dy } of adjacentSectors) {
             const targetX = this.player.x + dx;
             const targetY = this.player.y + dy;
@@ -225,23 +234,8 @@ export class CavernGame {
             if (this.currentMission.inForest(targetX, targetY)) {
                 const targetSector = this.currentMission.getXY(targetX, targetY);
 
-                if (targetSector instanceof ChestSector) {
-                    const goldFound = targetSector.gold || 0;
-                    const itemFound = targetSector.item;
-                    this.player.gold += goldFound;
-
-                    this.currentMission.setXY(targetX, targetY, freeSector());
-
-                    if (goldFound > 0) {
-                        this.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
-                    } else if (itemFound)  {
-                        this.drawCommandWindowMessage(`You found ${itemFound.getName()}.`);
-                        this.player.receiveItem(itemFound);
-                        this.drawItems();
-                    }
-
-                    this.drawStats(false);
-                    this.drawForestNearPlayer();
+                if (targetSector.onChestOpen(context)) {
+                    this.currentMission.setXY(targetX, targetY, new FreeSector());
                     return;
                 }
             }
@@ -253,7 +247,7 @@ export class CavernGame {
     public doMonsters() {
         const playerArmorPoints = this.player.getArmorPoints(); // TODO: implement method on Player for this
         const playerSector = this.currentMission.getXY(this.player.x, this.player.y);
-        const playerInCastle = playerSector instanceof CastleSector;
+        const playerInCastle = playerSector.isCastle;
 
         for (const { dx, dy } of adjacentSectors) {
             const targetX = this.player.x + dx;
@@ -261,19 +255,19 @@ export class CavernGame {
 
             if (this.currentMission.inForest(targetX, targetY)) {
                 const targetSector = this.currentMission.getXY(targetX, targetY);
+                const attackingMonster = targetSector.monster;
 
-                if (targetSector instanceof MonsterSector) {
-                    const attackingMonster = targetSector.monster;
+                if (attackingMonster) {
                     console.log(`adjacent monster, player in castle ${playerInCastle}`);
                     if (playerInCastle) {
-                        this.drawCommandWindowMessage(`The ${targetSector.monster.name} misses`);
+                        this.drawCommandWindowMessage(`The ${attackingMonster.name} misses`);
                     } else {
                         const rawDamage = Math.round(
                             (attackingMonster.points / 8) +
                             (Math.random() * 3) +
                             (attackingMonster.worth / 4));
 
-                        this.drawCommandWindowMessage(`The ${targetSector.monster.name} hits`);
+                        this.drawCommandWindowMessage(`The ${attackingMonster.name} hits`);
 
                         if (rawDamage > playerArmorPoints) {
                             this.player.takeDamage(rawDamage - playerArmorPoints);
@@ -308,14 +302,15 @@ export class CavernGame {
 
                     console.log(`moving ${coord.x} ${coord.y} to ${newX} ${newY}`);
 
-                    if (this.currentMission.getXY(newX, newY) instanceof FreeSector) {
+                    if (this.currentMission.getXY(newX, newY).isFree) {
                         console.log("move this guy");
                         const sectorToMove = this.currentMission.getXY(coord.x, coord.y);
                         console.log(sectorToMove);
-                        if (sectorToMove instanceof MonsterSector) {
-                            this.currentMission.setXY(newX, newY, monsterSector(sectorToMove.monster));
+                        const monster = sectorToMove.monster;
+                        if (monster) {
+                            this.currentMission.setXY(newX, newY, new MonsterSector(monster));
                         }
-                        this.currentMission.setXY(coord.x, coord.y, freeSector());
+                        this.currentMission.setXY(coord.x, coord.y, new FreeSector());
                     }
 
                 }

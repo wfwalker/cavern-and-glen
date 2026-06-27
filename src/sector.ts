@@ -33,6 +33,15 @@ export interface BowHitResult {
     shouldClearSector: boolean;
 }
 
+export interface GameChestOpenContext {
+    drawCommandWindowMessage(message: string): void;
+    addGold(amount: number): void;
+    receiveItem(item: Item): void;
+    drawItems(): void;
+    drawStats(inverse: boolean): void;
+    drawForestNearPlayer(): void;
+}
+
 // Base class for all sector types
 export abstract class BaseSector {
     abstract displayString(): string;
@@ -62,6 +71,15 @@ export abstract class BaseSector {
         context.drawCommandWindowMessage("The arrow hit something.");
         return { shouldClearSector: false };
     }
+
+    get isCastle(): boolean { return false; }
+    get isFree(): boolean { return false; }
+    get monster(): Monster | null { return null; }
+
+    /** Handles opening this sector as a chest. Returns true if opened. */
+    onChestOpen(context: GameChestOpenContext): boolean {
+        return false;
+    }
 }
 
 export class FreeSector extends BaseSector {
@@ -70,6 +88,7 @@ export class FreeSector extends BaseSector {
     constructor(trap: boolean = false) { super(); this._trap = trap; }
     get trap(): boolean { return this._trap; }
     displayString(): string { return ' \u00B7 '; }
+    override get isFree(): boolean { return true; }
     canEnter(context: GameContext): boolean {
         return true;
     }
@@ -97,8 +116,8 @@ export class TreeSector extends BaseSector {
 export class MonsterSector extends BaseSector {
     readonly kind = 'monster' as const;
     private _monster: Monster;
-    constructor(monster: Monster) { super(); this._monster = monster; }
-    get monster(): Monster { return this._monster; }
+    constructor(monster: Monster) { super(); this._monster = { ...monster }; }
+    override get monster(): Monster { return this._monster; }
     displayString(): string {
         if (this._monster.invisible) {
             return ' \u00B7 ';
@@ -150,6 +169,7 @@ export class CastleSector extends BaseSector {
     displayString(): string {
         return this._me_inside ? '\u00AB\u263A\u00BB' : '\u00AB \u00BB';
     }
+    override get isCastle(): boolean { return true; }
     canEnter(context: GameContext): boolean {
         return true;
     }
@@ -190,6 +210,22 @@ export class ChestSector extends BaseSector {
         context.drawCommandWindowMessage("The arrow ricocheted off a chest.");
         return { shouldClearSector: false };
     }
+    override onChestOpen(context: GameChestOpenContext): boolean {
+        const goldFound = this._gold || 0;
+        const itemFound = this._item;
+        context.addGold(goldFound);
+
+        if (goldFound > 0) {
+            context.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
+        } else if (itemFound)  {
+            context.drawCommandWindowMessage(`You found ${itemFound.getName()}.`);
+            context.receiveItem(itemFound);
+            context.drawItems();
+        }
+        context.drawStats(false);
+        context.drawForestNearPlayer();
+        return true;
+    }
 }
 
 export class PlayerSector extends BaseSector {
@@ -204,28 +240,4 @@ export class PlayerSector extends BaseSector {
     }
 }
 
-export function freeSector(): FreeSector {
-    return new FreeSector();
-}
 
-export function playerSector(): PlayerSector {
-    return new PlayerSector();
-}
-
-export function castleSector(playerInside: boolean = false): CastleSector {
-    return new CastleSector(playerInside);
-}
-
-export function treeSector(): TreeSector {
-    return new TreeSector();
-}
-
-export function chestSector(gold: number, item?: Item): ChestSector {
-    console.log("chest sector factory " + gold);
-    console.log(item);
-    return new ChestSector(gold, item);
-}
-
-export function monsterSector(monster: Monster): MonsterSector {
-    return new MonsterSector(structuredClone(monster));
-}
