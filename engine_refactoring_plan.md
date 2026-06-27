@@ -1,82 +1,93 @@
-# Refactoring and Testing Plan: `engine.ts`
+# Refactoring and Testing Plan: `engine.ts` (Revised)
 
-`CavernGame` currently functions as a "God Class" that mixes UI rendering, input handling, state management, and core game logic. This makes it difficult to maintain, extend, and unit test.
+We have successfully implemented the pre-refactoring test safety net (`src/engine.test.ts` with 48 passing tests) and extracted the game states into `src/gamemode.ts`. In addition, we extracted map/sector logic into polymorphic methods on `BaseSector` subclasses.
 
----
-
-## 1. Analysis of Current Responsibilities in `engine.ts`
-
-| Responsibility | Current Code Section | Coupling/Issues |
-| :--- | :--- | :--- |
-| **Asset Loading** | `loadMonsterList()`, `loadItemList()`, `document.fonts.load` | Relies on global `fetch` and browser font loading. |
-| **Canvas & Font Rendering** | `writeAt()`, `clearScreen()`, `render()` | Direct dependency on `HTMLCanvasElement`, `CanvasRenderingContext2D`, and browser APIs. |
-| **Input & Control Flow** | `setupInput()`, `handlePlayingKeys()`, `directionalQuestion()` | Tightly bound to keydown events and async prompt hooks. |
-| **Game State Machine** | `currentMode: GameMode`, `titlePage()`, `gameLoop()` | Mixed with canvas clearing and requestAnimationFrame loops. |
-| **Core Game Actions** | `movePlayer()`, `doSword()`, `doBow()`, `doOpenChest()` | High coupling; modifies state (player/mission) and instantly prints messages/redraws. |
+This revised plan outlines the remaining steps to decouple the core game loop, logical coordinate drawing, and asset loading from browser-specific DOM APIs.
 
 ---
 
-## 2. Target Architecture (Separated Concerns)
+## 1. Current State vs. Target Architecture
 
-To break up `engine.ts`, we can divide it into smaller, single-responsibility modules:
+The responsibilities of `CavernGame` have already been significantly reduced, but it still couples **logical screen buffer updates** with **direct HTML Canvas drawing** and **HTTP asset fetching**.
 
 ```mermaid
 graph TD
-    A[GameEngine / Coordinator] --> B[InputManager]
-    A --> C[CanvasRenderer]
-    A --> D[GameStateManager]
-    A --> E[ActionController]
-    E --> F[Player Model]
-    E --> G[Mission Model]
+    A[CavernGame] --> B[gamemode.ts: GameMode State Machine]
+    A --> C[screenbuffer.ts: ScreenBuffer]
+    A --> D[Canvas 2D Context Drawing]
+    A --> E[window.fetch JSON files]
 ```
 
-### Proposed Modules
-
-1. **`CanvasRenderer` (UI Layer)**
-   * **Purpose**: Only handles drawing borders, text grid cells, and fonts onto the canvas context.
-   * **No game logic**: It accepts a screen buffer or a subset of state and renders it.
-2. **`InputManager` (Input Layer)**
-   * **Purpose**: Registers DOM event listeners, manages keystrokes, and calls high-level actions on the Coordinator.
-3. **`GameStateManager` (State Layer)**
-   * **Purpose**: Manages current mode transitions (`TITLE` ➔ `PLAYING` ➔ `GAME_OVER`) and state variables like player name entry.
-4. **`ActionController` (Logic Layer)**
-   * **Purpose**: Pure game logic (e.g. movement, combat resolution, looting).
-   * **Testability**: **High**. This module has no canvas or DOM dependencies. It only alters the `Player` and `Mission` objects and returns a result description (which the coordinator can choose to display).
+### Remaining Couplings to Refactor:
+1. **HTML5 Canvas Dependency**: `CavernGame` initializes `HTMLCanvasElement`, retrieves `CanvasRenderingContext2D`, sets dimensions, and loops using `requestAnimationFrame`.
+2. **Asset Loading Dependency**: `CavernGame` makes direct `fetch()` calls to load `monsters.json` and `items.json`.
+3. **Font Loading Dependency**: The entry point waits for `document.fonts.load` before bootstrapping the engine.
 
 ---
 
-## 3. Pre-Refactoring Unit Test Strategy
+## 2. Refactoring Milestones
 
-Before refactoring, we need a safety net of tests to prevent regressions. Since `CavernGame` is currently coupled to the browser window/canvas, we have two options:
+### Milestone 1: Extract `CanvasRenderer`
+Extract all HTML Canvas rendering code from `engine.ts` into a standalone `CanvasRenderer` class.
 
-### Option A: Mock the DOM (Recommended for pre-refactor)
-We can mock the canvas, canvas context, and `document` APIs in Vitest. This allows us to instantiate `CavernGame` in a Node environment and run unit tests directly on its methods.
+* **Responsibility**: Takes a `ScreenBuffer`, maps characters to IBM PC BIOS glyphs, and draws them to the physical HTML5 Canvas context.
+* **Benefit**: `CavernGame` becomes a pure logic engine. It writes characters to a logical 80x25 `ScreenBuffer` and has **zero** knowledge of pixels, fonts, or the HTML DOM.
+* **Design**:
+  ```typescript
+  export class CanvasRenderer {
+      private ctx: CanvasRenderingContext2D;
+      private charWidth: number;
+      private charHeight: number;
 
-### Option B: Extract Action Helpers
-Extract the core calculations into standalone, pure functions or methods that can be tested in isolation without instantiating the full rendering engine.
+      constructor(canvasId: string, charWidth = 8, charHeight = 8) { ... }
+      public render(screenBuffer: ScreenBuffer): void { ... }
+  }
+  ```
+
+### Milestone 2: Extract `AssetRepository` / `DataLoader`
+Extract the async loader logic out of `CavernGame` to make it easily stubbable/injectable.
+
+* **Responsibility**: Fetches monsters and items from JSON assets and builds the concrete item and monster templates.
+* **Benefit**: Allows us to pass mock monster and item lists directly to `CavernGame` constructors in unit tests without relying on global network fetch mocks.
+* **Design**:
+  ```typescript
+  export class AssetRepository {
+      public async loadAll(): Promise<{ monsterList: Monster[], itemList: Item[] }> {
+          const monsters = await (await fetch('./monsters.json')).json();
+          const items = await (await fetch('./items.json')).json();
+          return {
+              monsterList: monsters.monsterList,
+              itemList: buildItemListFromJSON(items.itemList)
+          };
+      }
+  }
+  ```
+
+### Milestone 3: Simplify Engine Instantiation in Entry Point
+Clean up the entry point in `engine.ts` by using the new classes:
+
+```typescript
+window.addEventListener('DOMContentLoaded', () => {
+    document.fonts.load('8px "Web437_IBM_BIOS.woff"').then(async () => {
+        const repo = new AssetRepository();
+        const { monsterList, itemList } = await repo.loadAll();
+        
+        const game = new CavernGame({ monsterList, itemList });
+        const renderer = new CanvasRenderer('gameCanvas');
+        
+        function loop() {
+            renderer.render(game.getScreenBuffer());
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    });
+});
+```
 
 ---
 
-## 4. Proposed Unit Tests to Add
+## 3. Impact on Existing Unit Tests
 
-We should add `src/engine.test.ts` with the following test suites:
-
-### Suite 1: Keyboard Input Routing
-* **Test**: Pressing `'s'` when state is `PLAYING` triggers `doSword()`.
-* **Test**: Pressing `'b'` when state is `PLAYING` triggers `doBow()`.
-* **Test**: Pressing `'o'` when state is `PLAYING` triggers `doOpenChest()`.
-
-### Suite 2: Action Resolution (`doBow()`, `doSword()`, `doOpenChest()`)
-* **Test**: Firing the bow with 0 arrows prints a warning and doesn't fire.
-* **Test**: Firing the bow with arrows decrements the arrow count by 1.
-* **Test**: An arrow hit on a monster reduces its points.
-* **Test**: An arrow hit on a tree prints a tree obstruction message.
-* **Test**: An arrow flying off the grid prints a "flew off" message.
-* **Test**: Opening a chest adjacent to the player adds the chest's gold to the player's gold.
-* **Test**: Opening a chest replaces the chest sector with a free sector.
-* **Test**: Attempting to open a chest when none is adjacent prints a "no chest nearby" warning.
-
----
-
-> [!NOTE]
-> By implementing the mock-based unit tests *before* refactoring, we can proceed with separating the canvas renderer and input controller without breaking the game's behavior.
+Once these refactors are complete, the unit tests in [engine.test.ts](file:///Users/walker/Dropbox/cavern-and-glen/src/engine.test.ts) can be simplified:
+* **No DOM Canvas Mocking**: Tests will no longer need to mock `HTMLCanvasElement`, `getContext`, `width`, or `height`. They can instantiate `new CavernGame(...)` with injected test lists and directly assert the contents of the `ScreenBuffer` via `game.getScreenRow(...)`.
+* **No global fetch stubbing**: We can simply pass mock lists to the `CavernGame` constructor instead of overriding `global.fetch`.
