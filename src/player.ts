@@ -48,6 +48,17 @@ export class Player {
         this.items.push(itemFound);
     }
 
+    public toggleItemUse(item: Item): void {
+        if (item instanceof Sword && !item.getInUse()) {
+            for (const other of this.items) {
+                if (other instanceof Sword && other.getInUse()) {
+                    other.toggleInUse();
+                }
+            }
+        }
+        item.toggleInUse();
+    }
+
     public getArmorPoints(): number {
         const myArmorItems: Armor[] = this.items.filter((item): item is Armor => item instanceof Armor);
 

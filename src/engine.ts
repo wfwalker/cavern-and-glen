@@ -142,7 +142,7 @@ export class CavernGame {
     }
 
     public doUseItem(item: Item): void {
-        item.toggleInUse();
+        this.player.toggleItemUse(item);
         this.drawCommandWindowMessage(`toggle usage of ${item.getName()}`);
     }
 
