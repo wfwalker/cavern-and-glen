@@ -68,6 +68,14 @@ export class Sword extends Item {
 		this.strength = strength;
 	}
 
+	public getInUseStrength(): number {
+		if (this.inUse) {
+			return this.strength;
+		} else {
+			return 0;
+		}
+	}
+
 	public clone(): Sword {
 		const copy = new Sword(this.name, this.strength);
 		copy.inUse = this.inUse;

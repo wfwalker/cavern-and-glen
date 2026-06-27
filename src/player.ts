@@ -1,7 +1,7 @@
 // player.ts
 
 import { Monster} from './engine';
-import { Item, Armor } from './item';
+import { Item, Armor, Sword } from './item';
 
 export class Player {
     // Data Properties
@@ -60,8 +60,16 @@ export class Player {
         return totalArmorPoints;
     }
 
+    public getSwordStrength(): number {
+        const mySwords: Sword[] = this.items.filter((item): item is Sword => item instanceof Sword);
+        const totalSwordStrength = mySwords.reduce((accumulator, swordItem) => {
+            return accumulator + swordItem.getInUseStrength();
+        }, 0);
+        return totalSwordStrength > 0 ? totalSwordStrength : 1;
+    }
+
     public swordDamage(): number {
-        const swordStrength = 1; // TODO: implement different swords
+        const swordStrength = this.getSwordStrength();
 
         if (this.exp > 1) {
             const rawDamage = ((swordStrength * this.exp) / (2 * Math.log(this.exp))) + (swordStrength + 3) * Math.random();
