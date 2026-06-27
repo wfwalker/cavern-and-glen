@@ -33,11 +33,8 @@ export interface BowHitResult {
     shouldClearSector: boolean;
 }
 
-
-
 // Base class for all sector types
 export abstract class BaseSector {
-    abstract readonly kind: 'free' | 'tree' | 'monster' | 'castle' | 'chest' | 'player';
     abstract displayString(): string;
 
     /** Check if a player can enter this sector. Can print messages to the context. */
@@ -46,12 +43,12 @@ export abstract class BaseSector {
     }
 
     /** What happens when a player tries to move onto this sector. Only called if canEnter returns true. Returns the new Sector for the destination cell. */
-    playerMoveTo(context: GameContext): Sector {
+    playerMoveTo(context: GameContext): BaseSector {
         throw new Error("Cannot enter this sector");
     }
 
     /** What the old cell becomes when a player leaves it. Return null to keep it in place. */
-    onPlayerLeave(): Sector | null {
+    onPlayerLeave(): BaseSector | null {
         return new FreeSector();
     }
 
@@ -76,7 +73,7 @@ export class FreeSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         return true;
     }
-    playerMoveTo(context: GameContext): Sector {
+    playerMoveTo(context: GameContext): BaseSector {
         return new PlayerSector();
     }
 }
@@ -156,10 +153,10 @@ export class CastleSector extends BaseSector {
     canEnter(context: GameContext): boolean {
         return true;
     }
-    playerMoveTo(context: GameContext): Sector {
+    playerMoveTo(context: GameContext): BaseSector {
         return new CastleSector(true);
     }
-    onPlayerLeave(): Sector | null {
+    onPlayerLeave(): BaseSector | null {
         this._me_inside = false;
         return null;
     }
@@ -206,15 +203,6 @@ export class PlayerSector extends BaseSector {
         return false;
     }
 }
-
-// Discriminated union of class instances — preserves existing switch/kind narrowing
-export type Sector =
-    | FreeSector
-    | TreeSector
-    | MonsterSector
-    | CastleSector
-    | ChestSector
-    | PlayerSector;
 
 export function freeSector(): FreeSector {
     return new FreeSector();

@@ -2,8 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { Player } from './player';
 import { TitleMode, PlayingMode } from './gamemode'
 import { Armor } from './item'; 
-import { freeSector, playerSector, castleSector, monsterSector } from './sector';
-
+import { freeSector, PlayerSector, TreeSector, ChestSector, CastleSector, MonsterSector, FreeSector } from './sector';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -330,7 +329,7 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toEqual('player');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(PlayerSector);
   });
 
   it('moving into a free sector: old cell becomes a FreeSector', async () => {
@@ -339,7 +338,7 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.getXY(PX, PY).kind).toEqual('free');
+    expect(game.currentMission.getXY(PX, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('moving into a MonsterSector: player coords do not change', async () => {
@@ -362,8 +361,8 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
     game.movePlayer(1, 0);
 
-    expect(game.currentMission.getXY(PX, PY).kind).toEqual('player');
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toEqual('monster');
+    expect(game.currentMission.getXY(PX, PY)).toBeInstanceOf(PlayerSector);
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(MonsterSector);
   });
 
   it('moving out of bounds: player coords do not change', async () => {
@@ -387,7 +386,7 @@ describe('CavernGame.movePlayer() - grid updates', () => {
 
     game.movePlayer(-1, 0);
 
-    expect(game.currentMission.getXY(0, 0).kind).toEqual('player');
+    expect(game.currentMission.getXY(0, 0)).toBeInstanceOf(PlayerSector);
   });
 });
 
@@ -430,7 +429,7 @@ describe('CavernGame.doSword()', () => {
 
     game.doSword(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('swording a ChestSector leaves the chest intact', async () => {
@@ -439,7 +438,7 @@ describe('CavernGame.doSword()', () => {
 
     game.doSword(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('chest');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(ChestSector);
   });
 
   it('swording a CastleSector leaves the castle intact', async () => {
@@ -448,7 +447,7 @@ describe('CavernGame.doSword()', () => {
 
     game.doSword(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('castle');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(CastleSector);
   });
 
   it('non-fatal attack on a monster reduces its points and leaves it on the grid', async () => {
@@ -460,8 +459,8 @@ describe('CavernGame.doSword()', () => {
     game.doSword(1, 0);
 
     const cell = game.currentMission.getXY(PX + 1, PY);
-    expect(cell.kind).toBe('monster');
-    if (cell.kind === 'monster') {
+    expect(cell).toBeInstanceOf(MonsterSector);
+    if (cell instanceof MonsterSector) {
       expect(cell.monster.points).toBeLessThan(1000);
     }
   });
@@ -474,7 +473,7 @@ describe('CavernGame.doSword()', () => {
 
     game.doSword(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('fatal attack on a monster awards the player experience', async () => {
@@ -545,8 +544,8 @@ describe('CavernGame.doBow()', () => {
     game.doBow(1, 0);
 
     // Sample a few cells — they should all still be free
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
-    expect(game.currentMission.getXY(PX + 2, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(FreeSector);
+    expect(game.currentMission.getXY(PX + 2, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('arrow hitting a TreeSector does not remove the tree', async () => {
@@ -555,7 +554,7 @@ describe('CavernGame.doBow()', () => {
 
     game.doBow(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('tree');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(TreeSector);
   });
 
   it('arrow hitting a ChestSector does not remove the chest', async () => {
@@ -564,7 +563,7 @@ describe('CavernGame.doBow()', () => {
 
     game.doBow(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('chest');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(ChestSector);
   });
 
   it('arrow hitting a CastleSector does not remove the castle', async () => {
@@ -573,7 +572,7 @@ describe('CavernGame.doBow()', () => {
 
     game.doBow(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('castle');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(CastleSector);
   });
 
   it('non-fatal arrow hit on a monster reduces its points and leaves it on the grid', async () => {
@@ -584,8 +583,8 @@ describe('CavernGame.doBow()', () => {
     game.doBow(1, 0);
 
     const cell = game.currentMission.getXY(PX + 1, PY);
-    expect(cell.kind).toBe('monster');
-    if (cell.kind === 'monster') {
+    expect(cell).toBeInstanceOf(MonsterSector);
+    if (cell instanceof MonsterSector) {
       expect(cell.monster.points).toBeLessThan(10000);
     }
   });
@@ -597,7 +596,7 @@ describe('CavernGame.doBow()', () => {
 
     game.doBow(1, 0);
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('arrow stops on first non-free sector and does not affect cells beyond it', async () => {
@@ -608,8 +607,8 @@ describe('CavernGame.doBow()', () => {
     game.doBow(1, 0);
 
     // Tree stays, chest behind it is untouched
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('tree');
-    expect(game.currentMission.getXY(PX + 2, PY).kind).toBe('chest');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(TreeSector);
+    expect(game.currentMission.getXY(PX + 2, PY)).toBeInstanceOf(ChestSector);
   });
 });
 
@@ -626,7 +625,7 @@ describe('CavernGame.doOpenChest()', () => {
 
     game.doOpenChest();
 
-    expect(game.currentMission.getXY(PX + 1, PY).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY)).toBeInstanceOf(FreeSector);
   });
 
   it('opening an adjacent gold chest adds gold to the player', async () => {
@@ -674,6 +673,6 @@ describe('CavernGame.doOpenChest()', () => {
 
     game.doOpenChest();
 
-    expect(game.currentMission.getXY(PX + 1, PY + 1).kind).toBe('free');
+    expect(game.currentMission.getXY(PX + 1, PY + 1)).toBeInstanceOf(FreeSector);
   });
 });

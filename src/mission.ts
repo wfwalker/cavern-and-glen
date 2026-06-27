@@ -3,7 +3,7 @@
 import { Player } from './player';
 import { Monster } from './engine';
 import { Item } from './item';
-import { Sector, freeSector, monsterSector, playerSector, chestSector, treeSector, castleSector } from './sector';
+import { freeSector, monsterSector, BaseSector, playerSector, chestSector, treeSector, castleSector, FreeSector, MonsterSector } from './sector';
 
 export interface MissionObjective {
     targetMonster: Monster; // must be an entry from the game monsterList
@@ -12,7 +12,7 @@ export interface MissionObjective {
 }
 
 export class Mission {
-    private grid: Sector[][];
+    private grid: BaseSector[][];
     private objective: MissionObjective;
     private playerExp: number;
     private castleCount: number;
@@ -39,11 +39,11 @@ export class Mission {
         this.putPlayerInForest(thePlayer);
     }
 
-    public getXY(x: number, y: number): Sector {
+    public getXY(x: number, y: number): BaseSector {
         return this.grid[x][y];
     }
 
-    public setXY(x: number, y: number, sector: Sector) {
+    public setXY(x: number, y: number, sector: BaseSector) {
         this.grid[x][y] = sector;
     }
 
@@ -78,7 +78,7 @@ export class Mission {
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
                 // Check if this specific matrix tile matches our type guard
-                if (this.grid[y][x].kind === 'free') {
+                if (this.grid[y][x] instanceof FreeSector) {
                     freeSpots.push({ x, y });
                 }
             }
@@ -100,7 +100,7 @@ export class Mission {
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
                 // Check if this specific matrix tile matches our type guard
-                if (this.grid[x][y].kind === 'monster') {
+                if (this.grid[x][y] instanceof MonsterSector) {
                     monsterSpots.push({ x, y });
                 }
             }
@@ -109,13 +109,13 @@ export class Mission {
         return monsterSpots;
     }
 
-    public place(x: number, y: number, something: Sector) {
+    public place(x: number, y: number, something: BaseSector) {
         // console.log("placed at " + x + ", " + y);
         // console.log(something);
         this.grid[x][y] = something;
     }
 
-    private placeOnRandomFreeSector(something: Sector): { x: number, y: number } {
+    private placeOnRandomFreeSector(something: BaseSector): { x: number, y: number } {
         const targetCoordinate = this.findRandomFreeCoordinate();
         if (!targetCoordinate) {
             throw new Error("No free coordinates left on grid");
@@ -191,7 +191,7 @@ export class Mission {
     // Set up the grid with all cells free.
     private initializeEmptyGrid() {
         for (let y = 0; y < this.forestRows; y++) {
-            const row: Sector[] = [];
+            const row: BaseSector[] = [];
             for (let x = 0; x < this.forestCols; x++) {
                 row.push(freeSector());
             }

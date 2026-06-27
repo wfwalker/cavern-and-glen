@@ -6,7 +6,7 @@ import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
-import { freeSector, monsterSector, GameContext, GameSwordContext, GameBowContext } from './sector';
+import { freeSector, monsterSector, GameContext, GameSwordContext, GameBowContext, ChestSector, CastleSector, MonsterSector, FreeSector } from './sector';
 
 
 export interface Monster {
@@ -96,7 +96,7 @@ export class CavernGame {
     }
 
     public playerInCastle(): boolean {
-        return (this.currentMission.getXY(this.player.x, this.player.y).kind === 'castle');
+        return (this.currentMission.getXY(this.player.x, this.player.y) instanceof CastleSector);
     }
 
     public readyForMission(): boolean {
@@ -195,7 +195,7 @@ export class CavernGame {
         while (this.currentMission.inForest(curX, curY)) {
             const targetSector = this.currentMission.getXY(curX, curY);
 
-            if (targetSector.kind !== 'free') {
+            if (! (targetSector instanceof FreeSector)) {
                 hitSomething = true;
 
                 const result = targetSector.onBowHit(context);
@@ -225,7 +225,7 @@ export class CavernGame {
             if (this.currentMission.inForest(targetX, targetY)) {
                 const targetSector = this.currentMission.getXY(targetX, targetY);
 
-                if (targetSector.kind === 'chest') {
+                if (targetSector instanceof ChestSector) {
                     const goldFound = targetSector.gold || 0;
                     const itemFound = targetSector.item;
                     this.player.gold += goldFound;
@@ -253,7 +253,7 @@ export class CavernGame {
     public doMonsters() {
         const playerArmorPoints = this.player.getArmorPoints(); // TODO: implement method on Player for this
         const playerSector = this.currentMission.getXY(this.player.x, this.player.y);
-        const playerInCastle = playerSector.kind === "castle";
+        const playerInCastle = playerSector instanceof CastleSector;
 
         for (const { dx, dy } of adjacentSectors) {
             const targetX = this.player.x + dx;
@@ -262,7 +262,7 @@ export class CavernGame {
             if (this.currentMission.inForest(targetX, targetY)) {
                 const targetSector = this.currentMission.getXY(targetX, targetY);
 
-                if (targetSector.kind === 'monster') {
+                if (targetSector instanceof MonsterSector) {
                     const attackingMonster = targetSector.monster;
                     console.log(`adjacent monster, player in castle ${playerInCastle}`);
                     if (playerInCastle) {
@@ -308,11 +308,11 @@ export class CavernGame {
 
                     console.log(`moving ${coord.x} ${coord.y} to ${newX} ${newY}`);
 
-                    if (this.currentMission.getXY(newX, newY).kind === 'free') {
+                    if (this.currentMission.getXY(newX, newY) instanceof FreeSector) {
                         console.log("move this guy");
                         const sectorToMove = this.currentMission.getXY(coord.x, coord.y);
                         console.log(sectorToMove);
-                        if (sectorToMove.kind === 'monster') {
+                        if (sectorToMove instanceof MonsterSector) {
                             this.currentMission.setXY(newX, newY, monsterSector(sectorToMove.monster));
                         }
                         this.currentMission.setXY(coord.x, coord.y, freeSector());
