@@ -2,7 +2,7 @@
 
 import { Player } from './player';
 import { Monster } from './engine';
-import { Item } from './item';
+import { Item, Sword } from './item';
 
 
 
@@ -218,6 +218,10 @@ export class ChestSector extends BaseSector {
         if (goldFound > 0) {
             context.drawCommandWindowMessage(`You found ${goldFound} gold pieces!`);
         } else if (itemFound)  {
+            if (itemFound instanceof Sword) {
+                const additionalCharges = Math.floor(Math.random() * 10) + 2;
+                itemFound.setCharges(itemFound.getCharges() + additionalCharges);
+            }
             context.drawCommandWindowMessage(`You found ${itemFound.getName()}.`);
             context.receiveItem(itemFound);
             context.drawItems();

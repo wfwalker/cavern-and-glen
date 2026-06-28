@@ -149,6 +149,20 @@ export class CavernGame {
         const newLoc = this.player.relativeLocation(dx, dy);
         console.log(newLoc);
 
+        // Special sword wear out logic
+        const activeSword = this.player.getActiveSword();
+        if (activeSword) {
+            if (Math.random() < 0.1) {
+                activeSword.decrementCharges();
+                if (activeSword.getCharges() <= 0) {
+                    this.drawCommandWindowMessage(`Your ${activeSword.getName()} has worn out!`);
+                    activeSword.toggleInUse(); // deactivate
+                    this.player.removeItem(activeSword);
+                    this.drawItems();
+                }
+            }
+        }
+
         if (this.currentMission.inForest(newLoc.x, newLoc.y)) {
             const targetSector = this.currentMission.getXY(newLoc.x, newLoc.y);
             console.log("doSword inForest found");

@@ -430,6 +430,25 @@ describe('CavernGame.doSword()', () => {
 
     expect(game.player.exp).toBe(expBefore);
   });
+
+  it('using a special sword has a chance to decrement charges and wear out', async () => {
+    const { game, PX, PY } = await makeGame();
+    const { Sword } = await import('./item');
+    const mySword = new Sword('Magic Sword', 3, 1); // 1 charge
+    game.player.receiveItem(mySword);
+    mySword.toggleInUse(); // equip it
+
+    // Mock Math.random to return 0.05 (less than 0.1, so it always triggers charge decrement)
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.05);
+
+    game.doSword(1, 0); // swing
+
+    expect(mySword.getCharges()).toBe(0);
+    expect(game.player.getActiveSword()).toBeNull();
+    expect(game.player.items.includes(mySword)).toBe(false);
+
+    randomSpy.mockRestore();
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -48,6 +48,22 @@ export class Player {
         this.items.push(itemFound);
     }
 
+    public getActiveSword(): Sword | null {
+        for (const item of this.items) {
+            if (item instanceof Sword && item.getInUse()) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    public removeItem(item: Item): void {
+        const index = this.items.indexOf(item);
+        if (index !== -1) {
+            this.items.splice(index, 1);
+        }
+    }
+
     public toggleItemUse(item: Item): void {
         if (item instanceof Sword && !item.getInUse()) {
             for (const other of this.items) {

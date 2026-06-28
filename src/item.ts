@@ -86,10 +86,24 @@ export class Armor extends Item {
 
 export class Sword extends Item {
 	private strength: number;
+	private charges: number;
 
-	constructor(name: string, strength: number) {
+	constructor(name: string, strength: number, charges: number = 0) {
 		super(name);
 		this.strength = strength;
+		this.charges = charges;
+	}
+
+	public getCharges(): number {
+		return this.charges;
+	}
+
+	public setCharges(value: number): void {
+		this.charges = value;
+	}
+
+	public decrementCharges(): void {
+		this.charges--;
 	}
 
 	public getInUseStrength(): number {
@@ -100,8 +114,17 @@ export class Sword extends Item {
 		}
 	}
 
+	public override displayString(): string {
+		const chargeStr = this.charges > 0 ? ` ${this.charges}` : '';
+		if (this.getInUse()) {
+			return `* ${this.getName()}${chargeStr}`;
+		} else {
+			return `  ${this.getName()}${chargeStr}`;
+		}
+	}
+
 	public clone(): Sword {
-		const copy = new Sword(this.name, this.strength);
+		const copy = new Sword(this.name, this.strength, this.charges);
 		copy.inUse = this.inUse;
 		return copy;
 	}
