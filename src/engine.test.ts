@@ -692,3 +692,34 @@ describe('Magic Items Usage', () => {
     expect(game.player.items).toContain(ring);
   });
 });
+
+describe('CavernGame Save and Load integration', () => {
+  it('should save character to localStorage and load it back', async () => {
+    const { CavernGame } = await import('./engine');
+    const { Player } = await import('./player');
+    const { monsters, items } = loadTestData();
+    const game = new CavernGame(monsters, items);
+
+    game.player = new Player('hero-test');
+    game.player.exp = 120;
+    game.player.gold = 50;
+
+    const mockSetItem = vi.spyOn(Storage.prototype, 'setItem');
+    const mockGetItem = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(game.player.serialize()));
+
+    game.saveCharacterToLocalStorage();
+    expect(mockSetItem).toHaveBeenCalledWith('cavern_character', expect.any(String));
+
+    game.player = null as any; // clear active player
+
+    const loaded = game.loadCharacterFromLocalStorage();
+    expect(loaded).toBe(true);
+    expect(game.player).toBeDefined();
+    expect(game.player.name).toBe('hero-test');
+    expect(game.player.exp).toBe(120);
+    expect(game.player.gold).toBe(50);
+
+    mockSetItem.mockRestore();
+    mockGetItem.mockRestore();
+  });
+});

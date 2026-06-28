@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Player } from './player';
-import { Armor, Sword } from './item'; 
+import { Armor, Sword, Other } from './item'; 
 
 describe('Player Class', () => {
     it('should correctly calculate a relative location based on deltas', () => {
@@ -102,5 +102,51 @@ describe('Player Class', () => {
         expect(sword1.getInUse()).toBe(false);
         expect(sword2.getInUse()).toBe(false);
         expect(player.getSwordStrength()).toEqual(1); // default
+    });
+
+    it('should correctly serialize and deserialize a player with inventory items and states', () => {
+        const player = new Player("Lancelot");
+        player.exp = 150;
+        player.arrows = 35;
+        player.gold = 500;
+
+        const sword = new Sword("Excalibur", 10, 5);
+        const armor = new Armor("Knight Mail", 8);
+        const other = new Other("Amulet", 1);
+
+        player.receiveItem(sword);
+        player.receiveItem(armor);
+        player.receiveItem(other);
+
+        player.toggleItemUse(sword); // equip sword
+        player.toggleItemUse(armor); // equip armor
+
+        const serialized = player.serialize();
+        const deserialized = Player.deserialize(serialized);
+
+        expect(deserialized.name).toEqual("Lancelot");
+        expect(deserialized.exp).toEqual(150);
+        expect(deserialized.arrows).toEqual(35);
+        expect(deserialized.gold).toEqual(500);
+        expect(deserialized.items.length).toEqual(3);
+
+        const loadedSword = deserialized.items[0] as Sword;
+        expect(loadedSword).toBeInstanceOf(Sword);
+        expect(loadedSword.getName()).toEqual("Excalibur");
+        expect(loadedSword.getStrength()).toEqual(10);
+        expect(loadedSword.getCharges()).toEqual(5);
+        expect(loadedSword.getInUse()).toBe(true);
+
+        const loadedArmor = deserialized.items[1] as Armor;
+        expect(loadedArmor).toBeInstanceOf(Armor);
+        expect(loadedArmor.getName()).toEqual("Knight Mail");
+        expect(loadedArmor.getPoints()).toEqual(8);
+        expect(loadedArmor.getInUse()).toBe(true);
+
+        const loadedOther = deserialized.items[2] as Other;
+        expect(loadedOther).toBeInstanceOf(Other);
+        expect(loadedOther.getName()).toEqual("Amulet");
+        expect(loadedOther.getPower()).toEqual(1);
+        expect(loadedOther.getInUse()).toBe(false);
     });
 });

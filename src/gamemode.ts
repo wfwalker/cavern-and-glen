@@ -23,12 +23,14 @@ export class TitleMode extends GameMode {
                 this.game.displayCharacterCreationScreen('');
                 break;
             case 'l':
-                const testPlayer = new Player('testGuy');
-                testPlayer.receiveItem(this.game.itemList[0].clone());
-                testPlayer.receiveItem(this.game.itemList[1].clone());
-                testPlayer.receiveItem(this.game.itemList[2].clone());
-                this.game.player = testPlayer;
+                this.game.loadCharacterFromLocalStorage();
                 this.game.drawTitlePage();
+                break;
+            case 's':
+                if (this.game.readyForMission()) {
+                    this.game.saveCharacterToLocalStorage();
+                    this.game.drawTitlePage();
+                }
                 break;
             case 'm':
                 if (this.game.readyForMission()) {

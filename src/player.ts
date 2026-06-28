@@ -1,7 +1,23 @@
 // player.ts
 
 import { Monster} from './engine';
-import { Item, Armor, Sword } from './item';
+import { Item, Armor, Sword, Other } from './item';
+
+export interface SavedPlayerData {
+    name: string;
+    exp: number;
+    arrows: number;
+    gold: number;
+    items: {
+        kind: 'armor' | 'sword' | 'other';
+        name: string;
+        inUse: boolean;
+        points?: number;
+        strength?: number;
+        charges?: number;
+        power?: number;
+    }[];
+}
 
 export class Player {
     // Data Properties
@@ -21,6 +37,62 @@ export class Player {
         this.x = 0;
         this.y = 0;
         this.items = [];
+    }
+
+    public serialize(): SavedPlayerData {
+        return {
+            name: this.name,
+            exp: this.exp,
+            arrows: this.arrows,
+            gold: this.gold,
+            items: this.items.map(item => {
+                if (item instanceof Armor) {
+                    return {
+                        kind: 'armor',
+                        name: item.getName(),
+                        inUse: item.getInUse(),
+                        points: item.getPoints()
+                    };
+                } else if (item instanceof Sword) {
+                    return {
+                        kind: 'sword',
+                        name: item.getName(),
+                        inUse: item.getInUse(),
+                        strength: item.getStrength(),
+                        charges: item.getCharges()
+                    };
+                } else {
+                    return {
+                        kind: 'other',
+                        name: item.getName(),
+                        inUse: item.getInUse(),
+                        power: (item as Other).getPower()
+                    };
+                }
+            })
+        };
+    }
+
+    public static deserialize(data: SavedPlayerData): Player {
+        const player = new Player(data.name);
+        player.exp = data.exp;
+        player.arrows = data.arrows;
+        player.gold = data.gold;
+        player.items = data.items.map(itemData => {
+            let item: Item;
+            if (itemData.kind === 'armor') {
+                item = new Armor(itemData.name, itemData.points || 0);
+            } else if (itemData.kind === 'sword') {
+                item = new Sword(itemData.name, itemData.strength || 0, itemData.charges || 0);
+            } else {
+                item = new Other(itemData.name, itemData.power || 0);
+            }
+            if (itemData.inUse) {
+                item.toggleInUse();
+            }
+            return item;
+        });
+        return player;
     }
 
     public readyForMission(): boolean {

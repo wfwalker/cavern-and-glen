@@ -69,6 +69,10 @@ export class Armor extends Item {
 		this.points = points;
 	}
 
+	public getPoints(): number {
+		return this.points;
+	}
+
 	public getInUsePoints(): number {
 		if (this.inUse) {
 			return this.points;
@@ -92,6 +96,10 @@ export class Sword extends Item {
 		super(name);
 		this.strength = strength;
 		this.charges = charges;
+	}
+
+	public getStrength(): number {
+		return this.strength;
 	}
 
 	public getCharges(): number {

@@ -1,7 +1,7 @@
 // engine.ts
 
 import { Item, buildItemListFromJSON, GameUseItemContext } from './item';
-import { Player } from './player';
+import { Player, SavedPlayerData } from './player';
 import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
@@ -94,6 +94,35 @@ export class CavernGame {
         return this.player && this.player.readyForMission();
     }
 
+    private titlePageMessage: string = '';
+
+    public saveCharacterToLocalStorage(): void {
+        if (this.player) {
+            const serialized = this.player.serialize();
+            localStorage.setItem('cavern_character', JSON.stringify(serialized));
+            this.titlePageMessage = `Character ${this.player.name} saved!`;
+        } else {
+            this.titlePageMessage = "No character to save!";
+        }
+    }
+
+    public loadCharacterFromLocalStorage(): boolean {
+        const dataStr = localStorage.getItem('cavern_character');
+        if (!dataStr) {
+            this.titlePageMessage = "No saved character found!";
+            return false;
+        }
+        try {
+            const data = JSON.parse(dataStr) as SavedPlayerData;
+            this.player = Player.deserialize(data);
+            this.titlePageMessage = `Character ${this.player.name} loaded!`;
+            return true;
+        } catch (e) {
+            this.titlePageMessage = "Failed to load character data!";
+            return false;
+        }
+    }
+
     public drawTitlePage() {
         this.clearScreen();
         this.writeAt(29, 5, 'C a v e r n  &  G l e n');
@@ -104,6 +133,12 @@ export class CavernGame {
            this.writeAt(9, 18, 'N|ew Character    L|oad or S|ave character   M|ission   Q|uit');
         } else {
            this.writeAt(9, 18, 'N|ew Character    L|oad character                       Q|uit');
+        }
+
+        if (this.titlePageMessage) {
+            const x = Math.max(1, Math.floor((80 - this.titlePageMessage.length) / 2));
+            this.writeAt(x, 21, this.titlePageMessage);
+            this.titlePageMessage = ''; // Clear it after drawing
         }
     }
 
