@@ -2,7 +2,7 @@
 
 import { Item, buildItemListFromJSON, GameUseItemContext } from './item';
 import { Player, SavedPlayerData } from './player';
-import { GameMode, TitleMode, MissionEndedMode } from './gamemode'
+import { GameMode, TitleMode, MissionEndedMode, CharacterCreationMode, PlayingMode, SwordMode, BowMode, UseItemMode, CastleMode } from './gamemode';
 import { Mission } from './mission';
 import { TextWindow } from './textwindow';
 import { ScreenBuffer } from './screenbuffer';
@@ -55,6 +55,8 @@ export class CavernGame {
         this.commandWindow = new TextWindow(this.screenBuffer, { x1: 2, y1: 20, x2: 80, y2: 25 });
 
         this.drawTitlePage();
+        this.setupVirtualKeyboard();
+        this.onGameModeChange(this.currentMode);
     }
 
     public getScreenRow(row: number, start: number, end: number): string {
@@ -80,6 +82,7 @@ export class CavernGame {
 
     public setGameMode(inMode: GameMode) {
         this.currentMode = inMode;
+        this.onGameModeChange(inMode);
     }
 
     public getGameMode(): GameMode {
@@ -144,6 +147,10 @@ export class CavernGame {
 
     private setupInput() {
         window.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (document.activeElement?.tagName === 'INPUT') {
+                return; // Ignore global shortcuts when user is typing in name inputs
+            }
+
             const key = e.key;
             console.log(key);
             
@@ -155,6 +162,89 @@ export class CavernGame {
             // the GameMode object handles keyboard commands appropriate for the current mode
             this.currentMode.handleKey(key);
         });
+    }
+
+    private setupVirtualKeyboard() {
+        const keyboardEl = document.getElementById('virtualKeyboard');
+        if (!keyboardEl) return;
+
+        // Select all buttons in the virtual keyboard
+        const buttons = keyboardEl.querySelectorAll('button');
+        buttons.forEach(button => {
+            // Use pointerdown to respond instantly to touch/click
+            button.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                const key = button.getAttribute('data-key');
+                if (key) {
+                    this.currentMode.handleKey(key);
+                }
+            });
+        });
+
+        // Setup name input field changes
+        const inputEl = document.getElementById('playerNameInput') as HTMLInputElement;
+        const submitBtn = document.getElementById('submitNameBtn');
+
+        if (inputEl) {
+            inputEl.addEventListener('input', () => {
+                if (this.currentMode instanceof CharacterCreationMode) {
+                    (this.currentMode as any).playerNameInput = inputEl.value;
+                    this.displayCharacterCreationScreen(`> ${inputEl.value}_`);
+                }
+            });
+
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (this.currentMode instanceof CharacterCreationMode) {
+                        this.currentMode.handleKey('Enter');
+                    }
+                }
+            });
+        }
+
+        if (submitBtn) {
+            submitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (this.currentMode instanceof CharacterCreationMode) {
+                    this.currentMode.handleKey('Enter');
+                }
+            });
+        }
+    }
+
+    public onGameModeChange(inMode: GameMode) {
+        const keyboardEl = document.getElementById('virtualKeyboard');
+        const nameInputContainerEl = document.getElementById('nameInputContainer');
+        if (!keyboardEl || !nameInputContainerEl) return;
+
+        // Reset classes
+        keyboardEl.className = 'hidden';
+        nameInputContainerEl.className = 'hidden';
+
+        if (inMode instanceof TitleMode) {
+            keyboardEl.className = 'mode-title';
+        } else if (inMode instanceof CharacterCreationMode) {
+            keyboardEl.className = 'mode-charactercreation';
+            nameInputContainerEl.className = '';
+            const inputEl = document.getElementById('playerNameInput') as HTMLInputElement;
+            if (inputEl) {
+                inputEl.value = '';
+                setTimeout(() => inputEl.focus(), 50); // slight delay to handle mobile layout transition
+            }
+        } else if (inMode instanceof PlayingMode) {
+            keyboardEl.className = 'mode-playing';
+        } else if (inMode instanceof SwordMode) {
+            keyboardEl.className = 'mode-sword';
+        } else if (inMode instanceof BowMode) {
+            keyboardEl.className = 'mode-bow';
+        } else if (inMode instanceof UseItemMode) {
+            keyboardEl.className = 'mode-useitem';
+        } else if (inMode instanceof CastleMode) {
+            keyboardEl.className = 'mode-castle';
+        } else if (inMode instanceof MissionEndedMode) {
+            keyboardEl.className = 'mode-ended';
+        }
     }
 
     public displayCharacterCreationScreen(prompt: string) {
