@@ -405,7 +405,7 @@ describe('CavernGame.doSword()', () => {
     expect(game.player.exp).toBeGreaterThan(initialExp);
   });
 
-  it('killing the objective monster decrements the mission quota', async () => {
+  it('killing the objective monster with sword decrements the mission quota', async () => {
     const { game, monsterSector, PX, PY } = await makeGame();
     const targetName = game.currentMission.objectiveMonsterName();
     const targetMonster = game.monsterList.find(m => m.name === targetName)!;
@@ -414,6 +414,19 @@ describe('CavernGame.doSword()', () => {
     const statusBefore = game.currentMission.status();
 
     game.doSword(1, 0);
+
+    expect(game.currentMission.status()).not.toEqual(statusBefore);
+  });
+
+  it('killing the objective monster with bow decrements the mission quota', async () => {
+    const { game, monsterSector, PX, PY } = await makeGame();
+    const targetName = game.currentMission.objectiveMonsterName();
+    const targetMonster = game.monsterList.find(m => m.name === targetName)!;
+    const weakTarget = { ...targetMonster, points: 1 };
+    game.currentMission.setXY(PX + 1, PY, monsterSector(weakTarget));
+    const statusBefore = game.currentMission.status();
+
+    game.doBow(1, 0);
 
     expect(game.currentMission.status()).not.toEqual(statusBefore);
   });

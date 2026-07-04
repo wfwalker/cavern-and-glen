@@ -325,7 +325,10 @@ export class CavernGame {
         const context: GameBowContext = {
             drawCommandWindowMessage: (msg) => this.drawCommandWindowMessage(msg),
             getBowDamage: () => 4 + Math.round(this.player.exp / 10),
-            gainExperienceFromMonster: (m) => this.player.gainExperienceFromMonster(m)
+            gainExperienceFromMonster: (m) => this.player.gainExperienceFromMonster(m),
+            objectiveMonsterName: () => this.currentMission.objectiveMonsterName(),
+            decrementTargetMonsterQuota: () => this.currentMission.decrementTargetMonsterQuota(),
+            drawStats: (inv) => this.drawStats(inv)
         };
 
         while (this.currentMission.inForest(curX, curY)) {

@@ -27,6 +27,9 @@ export interface GameBowContext {
     drawCommandWindowMessage(message: string): void;
     getBowDamage(): number;
     gainExperienceFromMonster(monster: Monster): void;
+    objectiveMonsterName(): string;
+    decrementTargetMonsterQuota(): void;
+    drawStats(inverse: boolean): void;
 }
 
 export interface BowHitResult {
@@ -152,6 +155,12 @@ export class MonsterSector extends BaseSector {
         if (this._monster.points < 0) {
             context.drawCommandWindowMessage("You killed the " + this._monster.name);
             context.gainExperienceFromMonster(this._monster);
+            context.drawStats(false);
+
+            if (context.objectiveMonsterName() === this._monster.name) {
+                context.decrementTargetMonsterQuota();
+                context.drawStats(false);
+            }
             return { shouldClearSector: true };
         } else {
             context.drawCommandWindowMessage("You hit the " + this._monster.name);
