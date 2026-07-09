@@ -736,3 +736,62 @@ describe('CavernGame Save and Load integration', () => {
     mockGetItem.mockRestore();
   });
 });
+
+describe('Mission Grid Generation Correctness', () => {
+  it('should spawn exactly the requested quota of target monsters on the grid without transposition errors', async () => {
+    const { monsters, items } = loadTestData();
+    const { Mission } = await import('./mission');
+    const { Player } = await import('./player');
+    
+    // Generate multiple missions to test random generation robustness
+    for (let testRun = 0; testRun < 20; testRun++) {
+      const player = new Player('tester');
+      player.exp = Math.floor(Math.random() * 500) + 10;
+      const mission = new Mission(player, monsters, items);
+      
+      const quota = (mission as any).objective.quota;
+      const targetMonsterName = (mission as any).objective.targetMonster.name;
+
+      let targetMonsterCount = 0;
+      let otherMonsterCount = 0;
+      let castleCount = 0;
+      let chestCount = 0;
+      let treeCount = 0;
+      let playerCount = 0;
+
+      for (let x = 0; x < mission.forestRows; x++) {
+        for (let y = 0; y < mission.forestCols; y++) {
+          const sector = mission.getXY(x, y);
+          if (sector instanceof MonsterSector) {
+            if (sector.monster.name === targetMonsterName) {
+              targetMonsterCount++;
+            } else {
+              otherMonsterCount++;
+            }
+          } else if (sector instanceof CastleSector) {
+            castleCount++;
+          } else if (sector instanceof ChestSector) {
+            chestCount++;
+          } else if (sector instanceof TreeSector) {
+            treeCount++;
+          } else if (sector instanceof PlayerSector) {
+            playerCount++;
+          }
+        }
+      }
+
+      // 1. Target monster count must EXACTLY match the objective quota
+      expect(targetMonsterCount).toEqual(quota);
+
+      // 2. Castle count must match expected castle count (0.4% of 1600 = 6 castles)
+      expect(castleCount).toEqual(6);
+
+      // 3. Chest count must equal trunc(quota / 2)
+      expect(chestCount).toEqual(Math.floor(quota / 2));
+
+      // 4. Player must be placed exactly once on the grid
+      expect(playerCount).toEqual(1);
+    }
+  });
+});
+

@@ -74,11 +74,11 @@ export class Mission {
     private findRandomFreeCoordinate(): { x: number, y: number } | null {
         const freeSpots: { x: number; y: number }[] = [];
 
-        // 1. Scan the entire grid
-        for (let y = 0; y < this.grid.length; y++) {
-            for (let x = 0; x < this.grid[y].length; x++) {
-                // Check if this specific matrix tile matches our type guard
-                if (this.grid[y][x].isFree) {
+        // 1. Scan the entire grid using consistent coordinate indices
+        for (let x = 0; x < this.forestRows; x++) {
+            for (let y = 0; y < this.forestCols; y++) {
+                // Check if this specific matrix tile is a FreeSector
+                if (this.grid[x][y].isFree) {
                     freeSpots.push({ x, y });
                 }
             }
@@ -97,8 +97,9 @@ export class Mission {
     public monstersInForest(): { x: number, y: number }[] {
         const monsterSpots: { x: number; y: number }[] = [];
 
-        for (let y = 0; y < this.grid.length; y++) {
-            for (let x = 0; x < this.grid[y].length; x++) {
+        // Scan the grid using consistent x (row) and y (col) loops
+        for (let x = 0; x < this.forestRows; x++) {
+            for (let y = 0; y < this.forestCols; y++) {
                 // Check if this specific matrix tile matches our type guard
                 if (this.grid[x][y].monster !== null) {
                     monsterSpots.push({ x, y });
@@ -283,7 +284,8 @@ export class Mission {
 
         return {
             targetMonster: foundMonster,
-            quota: Math.round(Math.log(this.playerExp) + 3 * Math.random()),
+            // Ensure quota is always at least 1, even if player experience is low
+            quota: Math.max(1, Math.round(Math.log(this.playerExp) + 3 * Math.random())),
             current: 0
         };
     }
